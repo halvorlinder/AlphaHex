@@ -1,7 +1,9 @@
 import numpy as np
+import random
 from game import Game, Gamestate, Move
 from connect2 import Connect2, Connect2Gamestate
-from hex import Hex, HexState
+from hex import Hex, HexState, HexMove
+import copy
 
 class Node():
 
@@ -52,9 +54,10 @@ class MCTS():
 
     def __init__(self, game: Game, gamestate: Gamestate, score_func) -> None:
         self.game = game
-        self.gamestate = gamestate
+        self.initial_gamestate = gamestate
+        self.current_gamestate = gamestate
         self.score_func = score_func
-        self.root = Node(prior=-1, gamestate=self.gamestate, game=self.game)
+        self.root = Node(prior=-1, gamestate=self.initial_gamestate, game=self.game)
 
     def normalize_action_probs(self, action_probs, gamestate: Gamestate):
         norm_action_probs = [prob * mask for prob, mask in zip(action_probs, self.game.get_legal_moves(gamestate))]
@@ -63,43 +66,64 @@ class MCTS():
         return norm_action_probs
 
     def run_simulation(self):
+        M = 100
+
+        self.current_gamestate = self.initial_gamestate
         node = self.root
         search_path = [node]
         
+        # using tree policy to find leaf node
         while(len(node.children) > 0): # node has children, already expanded
             _, node = node.select_child(self.score_func)
             search_path.append(node)
-
+            self.current_gamestate = node.gamestate
+        
+        # expanding leaf node if not in terminal state
         reward = node.gamestate.reward()
+        if reward != None:
+            for s_node in search_path:
+                s_node.value += reward
+                s_node.visits += 1
+            return
+        
+        value, action_probs = dummy_predict(node.gamestate, self.game.move_cardinality)
+        norm_action_probs = self.normalize_action_probs(action_probs=action_probs, gamestate=node.gamestate)
+        node.expand(action_probs=norm_action_probs)
 
-        while reward == None: # i.e. we are not in a terminal state
-            value, action_probs = dummy_predict(node.gamestate, self.game.move_cardinality)
-            norm_action_probs = self.normalize_action_probs(action_probs=action_probs, gamestate=node.gamestate)
-            node.expand(action_probs=norm_action_probs)
-            action, node = node.select_child(self.score_func)
-            search_path.append(node)
-            reward = node.gamestate.reward()
-        
+        # perform M rollouts
+        leaf_node = node
+        for _ in range(M):
+            self.current_gamestate = leaf_node.gamestate
+            copy_game = copy.deepcopy(self.game)
+            epsilon = 0.1
+            while reward == None: # i.e. we are not in a terminal state
+                value, action_probs = dummy_predict(self.current_gamestate, self.game.move_cardinality)
+                # select next move in rollout phase
+                choose_random = random.random()
+                move = None
+                if choose_random < epsilon:
+                    true_idx = np.argwhere(np.array(self.game.get_legal_moves(self.current_gamestate)))
+                    random_idx = random.randint(0, len(true_idx) - 1)
+                    move = true_idx[random_idx][0]
+                else:
+                    move = np.argmax(action_probs)
                 
-        for s_node in search_path:
-            s_node.value += reward
-            s_node.visits += 1
-        
-        if(len(search_path) < 4):
-            print(len(search_path))
-        node = search_path[0]
-        self.root = search_path[0]
+                self.current_gamestate = copy_game.play_move_int(gamestate=self.current_gamestate, move_idx=move)
+                reward = self.current_gamestate.reward()
+                
+            for s_node in search_path:
+                s_node.value += reward
+                s_node.visits += 1
 
 if __name__ == "__main__":
     game = Hex()
     gs = HexState(4)
     mcts = MCTS(game=game, gamestate=gs, score_func=UCB)
-    for i in range(1):
+    for i in range(100):
         mcts.run_simulation()
+        print(mcts.current_gamestate)
     
     print("Best place to start:")
-    print(mcts.root.children[0].value)
-    print(mcts.root.children[1].value)
-    print(mcts.root.children[2].value)
-    print(mcts.root.children[3].value)
+    for _, child in mcts.root.children.items():
+        print(child.value)
 

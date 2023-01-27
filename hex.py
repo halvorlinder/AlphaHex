@@ -41,6 +41,7 @@ class Piece(Enum):
             str: A 0 character colored based on the type of piece
         """
         match piece:
+            # Player one is blue
             case Player.P1:
                 return f'{bcolors.BLUE}0{bcolors.ENDC}'
             case Player.P2:
@@ -60,6 +61,10 @@ class Hex(Game):
         new_gs.board[move.se_diag][move.ne_diag] = gamestate.turn
         new_gs.turn = new_gs.turn.next_player()
         return new_gs
+    
+    def play_move_int(self, gamestate: Gamestate, move_idx: int) -> Gamestate:
+        move = self.create_move(move_idx)
+        return self.play(gamestate=gamestate, move=move)
 
     def is_legal_move(self, gamestate: HexState, move: HexMove) -> bool:
         match gamestate.index(move):
@@ -122,10 +127,10 @@ class HexState(Gamestate):
         return move.se_diag >= 0 and move.se_diag < self.board_size and move.ne_diag >= 0 and move.ne_diag < self.board_size
 
     def reward(self) -> int:
-        start: list[HexMove] = [HexMove(0, ne, self.board_size) for ne in range(self.board_size)] if self.turn == Player.P1 else [
+        start: list[HexMove] = [HexMove(0, ne, self.board_size) for ne in range(self.board_size)] if self.turn == Player.P2 else [
             HexMove(se, 0, self.board_size) for se in range(self.board_size)]
         end: Callable[[HexMove], bool] = lambda move: (
-            move.se_diag if self.turn == Player.P1 else move.ne_diag) == self.board_size-1
+            move.se_diag if self.turn == Player.P2 else move.ne_diag) == self.board_size-1
         visited = [[False for _ in range(self.board_size)]
                    for _ in range(self.board_size)]
         for tile in start:
@@ -204,21 +209,89 @@ class HexMove(Move):
 if __name__ == "__main__":
     size = 4
     game = Hex(size)
-    gs = HexState(size)
-    print(gs)
-    gs2 = game.play(gs, HexMove(0, 0, size))
-    print(gs2)
+    # gs = HexState(size)
+    # print(gs)
+    # gs2 = game.play(gs, HexMove(0, 0, size))
+    # print(gs2)
 
-    gs3 = game.play(gs2, HexMove(3, 0, size))
-    print(gs3)
-    moves = game.get_legal_moves(gs3)
-    print(moves)
-    move = game.create_move(7)
-    print(move)
-    gs4 = game.play(gs3, move)
-    print(gs4)
-    print(gs4.reward())
-    gs5 = HexState.from_list(
+    # gs3 = game.play(gs2, HexMove(3, 0, size))
+    # print(gs3)
+    # moves = game.get_legal_moves(gs3)
+    # print(moves)
+    # move = game.create_move(7)
+    # print(move)
+    # gs4 = game.play(gs3, move)
+    # print(gs4)
+    # print(gs4.reward())
+    gs = HexState.from_list(
         [[1, 2, 0, 0], [0, 1, 2, 0], [0, 0, 1, 2], [0, 0, 0, 1],])
-    print(gs5)
-    print(gs5.reward())
+    print(gs)
+    reward = gs.reward()
+    assert(reward == 1)
+    print(f'Reward was the expected {reward}')
+
+    gs = HexState.from_list(
+        [[1, 2, 1, 0], [0, 1, 2, 0], [0, 0, 1, 2], [0, 0, 0, 2],])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == None)
+    print(f'Reward was the expected {reward}')
+
+    gs = HexState.from_list(
+        [[2, 1, 2, 0], [0, 1, 2, 0], [0, 1, 0, 2], [0, 1, 0, 2],])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == 1)
+    print(f'Reward was the expected {reward}')
+
+    gs = HexState.from_list(
+        [[2, 2, 2, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0],])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == None)
+    print(f'Reward was the expected {reward}')
+
+    gs = HexState.from_list(
+        [[1, 2, 0, 0], [0, 2, 1, 0], [0, 2, 0, 1], [0, 2, 0, 1],])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == None)
+    print(f'Reward was the expected {reward}')
+
+    gs = HexState.from_list(
+        [[1, 1, 1, 0], [2, 2, 2, 2], [0, 0, 0, 0], [0, 0, 1, 0],])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == -1)
+    print(f'Reward was the expected {reward}')
+
+    gs = HexState.from_list(
+        [[1, 0, 0, 1], [0, 2, 2, 0], [0, 2, 2, 0], [1, 0, 0, 1],])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == None)
+    print(f'Reward was the expected {reward}')
+
+    gs = HexState.from_list(
+        [[0, 0, 0, 1], [0, 2, 1, 0], [0, 1, 2, 0], [1, 0, 0, 2],])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == None)
+    print(f'Reward was the expected {reward}')
+
+    size = 5
+    game = Hex(size)
+
+    gs = HexState.from_list(
+        [[0, 0, 0, 1, 0],[0, 0, 2, 1, 0],[0, 0, 2, 1, 0],[0, 0, 2, 1, 0],[0, 0, 2, 1, 0]])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == 1)
+    print(f'Reward was the expected {reward}')
+
+    gs = HexState.from_list(
+        [[1, 1, 2, 1, 2],[1, 1, 2, 1, 1],[2, 2, 2, 1, 2],[1, 1, 2, 1, 2],[1, 2, 2, 1, 2]])
+    print(gs)
+    reward = gs.reward()
+    assert(reward == 1)
+    print(f'Reward was the expected {reward}')

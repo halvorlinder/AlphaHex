@@ -10,6 +10,10 @@ class Game(ABC):
         pass
 
     @abstractmethod
+    def play_move_int(self, gamestate : Gamestate, move_idx : int) -> Gamestate:
+        pass
+
+    @abstractmethod
     def is_legal_move(self, gamestate : Gamestate, move : Move) -> bool:
         pass
 
