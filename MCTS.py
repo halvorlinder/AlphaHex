@@ -18,8 +18,8 @@ class Node():
     def expand(self, action_probs):
         for action, prob in enumerate(action_probs):
             if(prob > 0):
-                new_move = game.create_move(action)
-                new_gamestate = self.game.play(gamestate=self.gamestate, move=new_move)
+                new_move = self.gamestate.create_move(action)
+                new_gamestate = self.gamestate.play(move=new_move)
                 self.children[action] = Node(prior=prob, gamestate=new_gamestate, game=self.game)
 
     def select_child(self, score_func):
@@ -60,7 +60,7 @@ class MCTS():
         self.root = Node(prior=-1, gamestate=self.initial_gamestate, game=self.game)
 
     def normalize_action_probs(self, action_probs, gamestate: Gamestate):
-        norm_action_probs = [prob * mask for prob, mask in zip(action_probs, self.game.get_legal_moves(gamestate))]
+        norm_action_probs = [prob * mask for prob, mask in zip(action_probs, gamestate.get_legal_moves())]
         prob_sum = sum(norm_action_probs)
         norm_action_probs = [prob / prob_sum for prob in norm_action_probs]
         return norm_action_probs
@@ -102,13 +102,13 @@ class MCTS():
                 choose_random = random.random()
                 move = None
                 if choose_random < epsilon:
-                    true_idx = np.argwhere(np.array(self.game.get_legal_moves(self.current_gamestate)))
+                    true_idx = np.argwhere(np.array(self.current_gamestate.get_legal_moves()))
                     random_idx = random.randint(0, len(true_idx) - 1)
                     move = true_idx[random_idx][0]
                 else:
                     move = np.argmax(action_probs)
                 
-                self.current_gamestate = copy_game.play_move_int(gamestate=self.current_gamestate, move_idx=move)
+                self.current_gamestate = self.current_gamestate.play_move_int(move_idx=move)
                 reward = self.current_gamestate.reward()
                 
             for s_node in search_path:
@@ -121,7 +121,6 @@ if __name__ == "__main__":
     mcts = MCTS(game=game, gamestate=gs, score_func=UCB)
     for i in range(100):
         mcts.run_simulation()
-        print(mcts.current_gamestate)
     
     print("Best place to start:")
     for _, child in mcts.root.children.items():

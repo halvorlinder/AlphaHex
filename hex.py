@@ -1,9 +1,12 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from enum import Enum, auto
 import copy
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from game import Game, Gamestate, Move
+# from agent import Agent
+# from hex_agents import RandomHexAgent, HumanHexAgent
 
 BOARD_SIZE = 4
 
@@ -56,29 +59,9 @@ class Hex(Game):
         self.move_cardinality = board_size * board_size
         self.board_size = board_size
 
-    def play(self, gamestate: HexState, move: HexMove) -> Gamestate:
-        new_gs = copy.deepcopy(gamestate)
-        new_gs.board[move.se_diag][move.ne_diag] = gamestate.turn
-        new_gs.turn = new_gs.turn.next_player()
-        return new_gs
-    
-    def play_move_int(self, gamestate: Gamestate, move_idx: int) -> Gamestate:
-        move = self.create_move(move_idx)
-        return self.play(gamestate=gamestate, move=move)
-
-    def is_legal_move(self, gamestate: HexState, move: HexMove) -> bool:
-        match gamestate.index(move):
-            case Piece.Open:
-                return True
-            case _:
-                return False
-
-    def get_legal_moves(self, gamestate: HexState) -> list[bool]:
-        return [self.is_legal_move(gamestate, HexMove.from_int_representation(m, self.board_size)) for m in range(self.move_cardinality)]
-
-    def create_move(self, int_representation: int) -> Move:
-        return HexMove.from_int_representation(int_representation, self.board_size)
-
+    def get_initial_position(self) -> HexState:
+        return HexState(self.board_size)
+        
 
 class HexState(Gamestate):
 
@@ -87,6 +70,31 @@ class HexState(Gamestate):
         self.board = [[Piece.Open for _ in range(
             board_size)] for _ in range(board_size)]
         self.turn = Player.P1
+
+    def play(self, move: HexMove) -> Gamestate:
+        assert(self.is_open(move))
+        new_gs = copy.deepcopy(self)
+        new_gs.board[move.se_diag][move.ne_diag] = self.turn
+        new_gs.turn = new_gs.turn.next_player()
+        return new_gs
+    
+    def play_move_int(self, move_idx: int) -> Gamestate:
+        move = self.create_move(move_idx)
+        return self.play(move)
+
+    def is_legal_move(self, move: HexMove) -> bool:
+        match self.index(move):
+            case Piece.Open:
+                return True
+            case _:
+                return False
+
+    def get_legal_moves(self) -> list[bool]:
+        return [self.is_legal_move(HexMove.from_int_representation(m, self.board_size)) for m in range(self.board_size*self.board_size)]
+
+    def create_move(self, int_representation: int) -> Move:
+        return HexMove.from_int_representation(int_representation, self.board_size)
+
 
     def from_list(l: list[list[int]]) -> HexState:
         """ Generates a gamestate from a grid of numbers (0,1,2)
@@ -116,6 +124,10 @@ class HexState(Gamestate):
         """
         return self.board[move.se_diag][move.ne_diag]
 
+    def is_open(self, move : HexMove):
+        return self.index(move) == Piece.Open
+
+
     def in_board(self, move: HexMove) -> bool:
         """
         Args:
@@ -125,6 +137,13 @@ class HexState(Gamestate):
             bool: The move in within the bounds of the board
         """
         return move.se_diag >= 0 and move.se_diag < self.board_size and move.ne_diag >= 0 and move.ne_diag < self.board_size
+
+    def get_agent_index(self) -> int:
+        match self.turn:
+            case Player.P1:
+                return 0
+            case Player.P2:
+                return 1
 
     def reward(self) -> int:
         start: list[HexMove] = [HexMove(0, ne, self.board_size) for ne in range(self.board_size)] if self.turn == Player.P2 else [
@@ -177,6 +196,7 @@ class HexState(Gamestate):
 class HexMove(Move):
 
     def __init__(self, se_diag, ne_diag, board_size) -> None:
+        # assert(se_diag >= 0 and se_diag < board_size and ne_diag >= 0 and ne_diag < board_size)
         self.se_diag = se_diag
         self.ne_diag = ne_diag
         self.board_size = board_size
