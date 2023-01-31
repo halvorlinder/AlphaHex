@@ -60,5 +60,9 @@ class DummyMultiAgentMove(Move):
         return self
 
 class DummyMultiAgent(Agent):
+
+    def __init__(self, name) -> None:
+        self.name = name
+
     def get_next_move(self, gamestate : Gamestate):
         return DummyMultiAgentMove()

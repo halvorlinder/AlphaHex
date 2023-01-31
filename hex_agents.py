@@ -31,8 +31,8 @@ from random import randrange
 
 class RandomHexAgent(SpecializedAgent):
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, name) -> None:
+        self.name = name
 
     def get_next_move(self, gamestate: HexState) -> int:
         while True:
@@ -43,7 +43,7 @@ class RandomHexAgent(SpecializedAgent):
 class HumanHexAgent(SpecializedAgent):
 
     def __init__(self) -> None:
-        pass
+        self.name = input("Please enter your name: ")
 
     def get_next_move(self, gamestate: HexState) -> int:
         while True:
