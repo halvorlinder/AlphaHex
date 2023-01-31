@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING
 
 class Game(ABC):
 
+    state_representation_lenght : int
     move_cardinality : int
+    num_agents : int = 2
 
     @abstractmethod
     def get_initial_position(self) -> Gamestate:
@@ -39,7 +41,12 @@ class Gamestate(ABC):
     def reward(self) -> int:
         pass
 
+    @abstractmethod
     def get_agent_index(self) -> int:
+        pass
+
+    @abstractmethod
+    def get_int_list_representation(self) -> list[int]:
         pass
 
 class Move(ABC):

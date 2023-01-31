@@ -58,6 +58,7 @@ class Hex(Game):
     def __init__(self, board_size: int = BOARD_SIZE) -> None:
         self.move_cardinality = board_size * board_size
         self.board_size = board_size
+        self.state_representation_lenght = self.move_cardinality
 
     def get_initial_position(self) -> HexState:
         return HexState(self.board_size)
@@ -94,6 +95,9 @@ class HexState(Gamestate):
 
     def create_move(self, int_representation: int) -> Move:
         return HexMove.from_int_representation(int_representation, self.board_size)
+
+    def get_int_list_representation(self) -> list[int]:
+        return list(map(lambda piece: 0 if piece==Piece.Open else 1 if piece==Player.P1 else 2, self.board))
 
 
     def from_list(l: list[list[int]]) -> HexState:
