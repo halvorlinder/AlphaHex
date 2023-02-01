@@ -2,7 +2,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, auto
 import copy
+import math
 from typing import Callable, TYPE_CHECKING
+import networkx as nx
+import matplotlib.pyplot as plt
 
 from game import Game, Gamestate, Move
 # from agent import Agent
@@ -62,8 +65,6 @@ class Hex(Game):
 
     def get_initial_position(self) -> HexState:
         return HexState(self.board_size)
-        
-
 class HexState(Gamestate):
 
     def __init__(self, board_size: int) -> None:
@@ -71,6 +72,8 @@ class HexState(Gamestate):
         self.board = [[Piece.Open for _ in range(
             board_size)] for _ in range(board_size)]
         self.turn = Player.P1
+        self.win_path = []
+        self.winner = None
 
     def play(self, move: HexMove) -> Gamestate:
         assert(self.is_open(move))
@@ -164,9 +167,23 @@ class HexState(Gamestate):
         if (not self.in_board(tile)) or self.index(tile) != self.turn.next_player() or visited[tile.se_diag][tile.ne_diag]:
             return False
         if end(tile):
+            self.win_path = [tile.as_tuple()]
+            self.winner = self.turn.next_player()
             return True
         visited[tile.se_diag][tile.ne_diag] = True
-        return any([self.dfs(HexMove(tile.se_diag+d[0], tile.ne_diag+d[1], self.board_size), visited, end) for d in DIRS])
+        on_path = any([self.dfs(HexMove(tile.se_diag+d[0], tile.ne_diag+d[1], self.board_size), visited, end) for d in DIRS])
+        if on_path:
+            self.win_path.append(tile.as_tuple())
+        return on_path
+
+    def get_diags(self) -> list[tuple[int, int]]:
+        se_diag_starts = [(0, i) for i in range(
+            self.board_size-1, -1, -1)] + [(i, 0) for i in range(1, self.board_size)]
+        diag_lengths_top = [i for i in range(1, self.board_size)]
+        diag_lenghts = diag_lengths_top + \
+            [self.board_size] + diag_lengths_top[::-1]
+        return list(map(lambda t: [(t[0][0] + i, t[0][1] + i)
+                     for i in range(t[1])], list(zip(se_diag_starts, diag_lenghts))))
 
     def __str__(self) -> str:
         """Horrible function that creates a colored printable representation of the board
@@ -194,8 +211,50 @@ class HexState(Gamestate):
                 prefix + diag_string + suffix + '\n'
         res += (" "*(self.board_size) +
                 f' {bcolors.PURPLE}#{bcolors.ENDC}' + '\n')
+        self.plot()
         return res
 
+    def plot(self) -> None:
+        plt.figure(2)
+        plt.clf()
+        ## Set axis limits
+        plt.xlim(-1,2*self.board_size)
+        plt.ylim(2*self.board_size + math.sqrt(3),-math.sqrt(3))
+
+        G=nx.Graph()
+        diags = self.get_diags()
+        color_map = []
+        size_map = [100]*(self.board_size*self.board_size)
+        for i, diag in enumerate(diags):
+            for j, pos in enumerate(diag):
+                G.add_node(str(pos),pos=(((self.board_size*2-1-len(diag)*2+1)//2)/2+j, i*math.sqrt(3)/2))
+                tile = HexMove(pos[0], pos[1], self.board_size)
+                piece = self.index(tile)
+                color_map.append('yellow' if piece == Piece.Open else 'blue' if piece==Player.P1 else 'red')
+                # neighbors = map(lambda move: (move.as_tuple()), filter(self.in_board, [HexMove(tile.se_diag+d[0], tile.ne_diag+d[1], self.board_size) for d in DIRS]))
+                # for neighbor in neighbors:
+                #     if not (pos in self.win_path and neighbor in self.win_path):
+                #         G.add_edge(str(pos), str(neighbor), color = 'black', weight = 1)
+        for (node_1, node_2) in zip(self.win_path, self.win_path[1:]):
+            size_map[list(G.nodes).index(str(node_1))] = 300
+            color = ('blue' if self.winner == Player.P1 else 'red')
+            G.add_edge(str(node_1), str(node_2), color=color, weight =7)
+        size_map[list(G.nodes).index(str(node_2))] = 300
+        edges = G.edges()
+        colors = [G[u][v]['color'] for u,v in edges]
+        weights = [G[u][v]['weight'] for u,v in edges]
+        pos=nx.get_node_attributes(G,'pos')
+        nx.draw(G,pos, node_color = color_map,  edge_color=colors, width=weights, node_size = size_map )
+
+        ## Draw the border lines
+        (x1, y1) = (((self.board_size*2-2)//2)/2, -(math.sqrt(3)))
+        (x2, y2) = (self.board_size, (self.board_size-1)*math.sqrt(3)/2)
+        (x3, y3) = (x1, 2*(self.board_size-1)*math.sqrt(3)/2+(math.sqrt(3)))
+        (x4, y4) = (-1, y2)
+        plt.plot([x1,x2], [y1,y2], color = 'red', linewidth = 10)
+        plt.plot([x2,x3], [y2,y3], color = 'blue', linewidth = 10)
+        plt.plot([x3,x4], [y3,y4], color = 'red', linewidth = 10)
+        plt.plot([x4,x1], [y4,y1], color = 'blue', linewidth = 10)
 
 class HexMove(Move):
 
@@ -219,6 +278,9 @@ class HexMove(Move):
 
     def get_int_representation(self):
         return self.se_diag * self.board_size + self.ne_diag
+
+    def as_tuple(self) -> tuple[int, int]:
+        return (self.se_diag, self.ne_diag)
 
     def __str__(self) -> str:
         return f'({self.se_diag}, {self.ne_diag}) -> {self.get_int_representation()}'

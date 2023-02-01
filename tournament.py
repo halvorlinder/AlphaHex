@@ -48,13 +48,15 @@ class TournamentPlayer:
         indices = list(map(lambda player : tuple([player]+  list(set(players)-set([player]))), players))
         scores = list(map(lambda index: self.scores[index], indices))
         
+        plt.figure(1)
         plt.bar(agents, scores)
         plt.ylim(0,self.num_matches) 
         plt.draw()
-        plt.pause(1)
+        plt.pause(2)
         plt.clf()
 
     def plot_wins(self) -> None:
+        plt.figure(1)
         plt.bar(list(map(lambda agent: agent.name ,self.agents)), self.agents_wins)
         plt.ylim(0,self.num_matches*comb(len(self.agents)-1, self.game.num_agents-1))
         plt.show()
@@ -62,7 +64,7 @@ class TournamentPlayer:
 
     
 if __name__ == '__main__':
-    tourney = TournamentPlayer(Hex(20), [RandomHexAgent('1'), RandomHexAgent('2'), RandomHexAgent('3'), RandomHexAgent('4')], 10, True)
+    tourney = TournamentPlayer(Hex(6), [RandomHexAgent('1'), RandomHexAgent('2'), RandomHexAgent('3'), RandomHexAgent('4')], 10, True)
     scores, wins = tourney.play_tournament()
     print(wins)
 
