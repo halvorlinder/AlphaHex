@@ -12,6 +12,7 @@ class GameInstance:
         gamestate = self.game.get_initial_position()
         agent_to_play_index = gamestate.get_agent_index()
         while gamestate.reward() == None:
+            print(gamestate)
             agent_to_play_index = gamestate.get_agent_index()
             agent_to_play = self.agents[agent_to_play_index]
             gamestate = gamestate.play(gamestate.create_move(
