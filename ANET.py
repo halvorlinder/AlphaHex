@@ -34,9 +34,27 @@ class PytorchNN(NeuralNet):
 
 class ConvNet(nn.Module):
 
-    def __init__(self, board_dimension_x: int, board_dimension_y: int, board_dimension_depth: int, move_cardinality: int) -> None:
+    def __init__(self, board_state_length: int, board_dimension_depth: int, move_cardinality: int) -> None:
         super().__init__()
-        self.conv1 = nn.Conv2d(in_channels=board_dimension_depth, out_channels=5, 3, )
+        self.max = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv1 = nn.Conv2d(in_channels=board_dimension_depth, out_channels=20, kernel_size=3, stride=1, padding="same")
+        self.conv2 = nn.Conv2d(in_channels=20, out_channels=50, kernel_size=3, stride=1, padding="same")
+        self.conv3 = nn.Conv2d(in_channels=50, out_channels=100, kernel_size=3, stride=1, padding="same")
+        self.fc1 = nn.Linear(board_state_length * 100, 100)
+        self.fc2 = nn.Linear(100, 40)
+        self.fc3 = nn.Linear(40, move_cardinality)
+
+    def forward(self, x):
+        x = self.max(F.relu(self.conv1(x)))
+        x = self.max(F.relu(self.conv2(x)))
+        x = self.max(F.relu(self.conv3(x)))
+        x = torch.flatten(x, 1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.softmax(self.fc3(x), dim=1)
+        return x
+
+
 
 
 class FFNet(nn.Module):
