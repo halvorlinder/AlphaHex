@@ -6,6 +6,7 @@ import math
 from typing import Callable, TYPE_CHECKING
 import networkx as nx
 import matplotlib.pyplot as plt
+import numpy as np
 
 from game import Game, Gamestate, Move
 # from agent import Agent
@@ -61,7 +62,7 @@ class Hex(Game):
     def __init__(self, board_size: int = BOARD_SIZE) -> None:
         self.move_cardinality = board_size * board_size
         self.board_size = board_size
-        self.state_representation_lenght = self.move_cardinality
+        self.state_representation_length = self.move_cardinality
 
     def get_initial_position(self) -> HexState:
         return HexState(self.board_size)
@@ -100,7 +101,7 @@ class HexState(Gamestate):
         return HexMove.from_int_representation(int_representation, self.board_size)
 
     def get_int_list_representation(self) -> list[int]:
-        return list(map(lambda piece: 0 if piece==Piece.Open else 1 if piece==Player.P1 else 2, self.board))
+        return list(map(lambda piece: 0 if piece==Piece.Open else 1 if piece==Player.P1 else 2, np.array(self.board).flatten()))
 
 
     def from_list(l: list[list[int]]) -> HexState:
@@ -180,10 +181,10 @@ class HexState(Gamestate):
         se_diag_starts = [(0, i) for i in range(
             self.board_size-1, -1, -1)] + [(i, 0) for i in range(1, self.board_size)]
         diag_lengths_top = [i for i in range(1, self.board_size)]
-        diag_lenghts = diag_lengths_top + \
+        diag_lengths = diag_lengths_top + \
             [self.board_size] + diag_lengths_top[::-1]
         return list(map(lambda t: [(t[0][0] + i, t[0][1] + i)
-                     for i in range(t[1])], list(zip(se_diag_starts, diag_lenghts))))
+                     for i in range(t[1])], list(zip(se_diag_starts, diag_lengths))))
 
     def __str__(self) -> str:
         """Horrible function that creates a colored printable representation of the board
@@ -194,10 +195,10 @@ class HexState(Gamestate):
         se_diag_starts = [(0, i) for i in range(
             self.board_size-1, -1, -1)] + [(i, 0) for i in range(1, self.board_size)]
         diag_lengths_top = [i for i in range(1, self.board_size)]
-        diag_lenghts = diag_lengths_top + \
+        diag_lengths = diag_lengths_top + \
             [self.board_size] + diag_lengths_top[::-1]
         diags = list(map(lambda t: [(t[0][0] + i, t[0][1] + i)
-                     for i in range(t[1])], list(zip(se_diag_starts, diag_lenghts))))
+                     for i in range(t[1])], list(zip(se_diag_starts, diag_lengths))))
         res = " "*(self.board_size) + \
             f' {bcolors.PURPLE}#{bcolors.ENDC}' + '\n'
         for i, diag in enumerate(diags):
@@ -239,7 +240,7 @@ class HexState(Gamestate):
             size_map[list(G.nodes).index(str(node_1))] = 300
             color = ('blue' if self.winner == Player.P1 else 'red')
             G.add_edge(str(node_1), str(node_2), color=color, weight =7)
-        size_map[list(G.nodes).index(str(node_2))] = 300
+        # size_map[list(G.nodes).index(str(node_2))] = 300
         edges = G.edges()
         colors = [G[u][v]['color'] for u,v in edges]
         weights = [G[u][v]['weight'] for u,v in edges]

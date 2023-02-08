@@ -52,7 +52,7 @@ class TournamentPlayer:
         plt.bar(agents, scores)
         plt.ylim(0,self.num_matches) 
         plt.draw()
-        plt.pause(2)
+        plt.pause(0.1)
         plt.clf()
 
     def plot_wins(self) -> None:

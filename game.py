@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 class Game(ABC):
 
-    state_representation_lenght : int
+    state_representation_length : int
     move_cardinality : int
     num_agents : int = 2
 

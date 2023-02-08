@@ -11,7 +11,7 @@ class DummyMultiAgentGame(Game):
     num_agents : int = 2
 
     def __init__(self, num_agents) -> None:
-        self.state_representation_lenght = 1
+        self.state_representation_length = 1
         self.move_cardinality = 1
         self.num_agents = num_agents
 
