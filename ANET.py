@@ -6,6 +6,13 @@ import numpy as np
 
 DEBUG_MODE = True
 
+class ConvNet(nn.Module):
+
+    def __init__(self, board_dimension_x: int, board_dimension_y: int, board_dimension_depth: int, move_cardinality: int) -> None:
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels=board_dimension_depth, out_channels=5, 3, )
+
+
 class FFNet(nn.Module):
 
     def __init__(self, board_state_length: int, move_cardinality: int) -> None:
