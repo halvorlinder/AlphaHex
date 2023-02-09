@@ -3,6 +3,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING
 from agent import SpecializedAgent
 from hex import HexState, HexMove, Piece
+from connect2 import Connect2Gamestate, Connect2Move
 if TYPE_CHECKING:
     from agent import Agent
 
@@ -38,6 +39,17 @@ class RandomHexAgent(SpecializedAgent):
         while True:
             n = randrange(0, gamestate.board_size*gamestate.board_size)
             if gamestate.is_open(gamestate.create_move(n)):
+                return n
+            
+class RandomConnect2Agent(SpecializedAgent):
+
+    def __init__(self, name) -> None:
+        self.name = name
+
+    def get_next_move(self, gamestate: Connect2Gamestate) -> int:
+        while True:
+            n = randrange(0, 4)
+            if gamestate.board_state[n] == 0:
                 return n
 
 class HumanHexAgent(SpecializedAgent):
