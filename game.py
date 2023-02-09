@@ -15,6 +15,10 @@ class Game(ABC):
     def get_initial_position(self) -> Gamestate:
         pass
 
+    @abstractmethod
+    def from_int_list_representation(self, list_rep : list[int]) -> Gamestate:
+        pass
+
 class Gamestate(ABC):
 
     @abstractmethod
@@ -48,6 +52,7 @@ class Gamestate(ABC):
     @abstractmethod
     def get_int_list_representation(self) -> list[int]:
         pass
+
 
 class Move(ABC):
 
