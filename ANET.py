@@ -6,14 +6,17 @@ import numpy as np
 
 from neural_net import NeuralNet
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 class PytorchNN(NeuralNet):
-    def __init__(self, model : nn.Module = None) -> None:
+    def __init__(self, model : nn.Module = None, num_epochs : int = 1, learning_rate : float = 0.01, batch_size : int = 4) -> None:
        self.model = model
+       self.num_epochs = num_epochs
+       self.learning_rate = learning_rate
+       self.batch_size = batch_size
 
-    def train(self, examples : np.ndarray, num_epochs : int = 3, learning_rate : float = 0.01, batch_size : int = 4):
-        trainer = Trainer(model=self.model, num_epochs=num_epochs, learning_rate=learning_rate, batch_size=batch_size)
+    def train(self, examples : np.ndarray):
+        trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
         trainer.train(examples)
 
     def predict(self, data : np.ndarray) -> np.ndarray:
@@ -98,17 +101,19 @@ class Trainer():
         for i, data in enumerate(training_loader):
             inputs, labels = data
 
-            if DEBUG_MODE and i == 0:
-                print("INPUT")
-                print(input)
-
-                print("LABELS")
-                print(labels)
-
-
             optimizer.zero_grad()
 
             outputs = self.model(inputs)
+
+            if DEBUG_MODE and i == 0:
+                print("INPUT")
+                print(inputs)
+
+                print("OUTPUTS")
+                print(outputs)
+
+                print("LABELS")
+                print(labels)
 
             loss = self.loss_fn(outputs, labels)
             loss.backward()
@@ -128,7 +133,7 @@ class Trainer():
         training_set_tensor = torch.tensor(training_set, dtype=torch.float32)
         #torch_dataset = torch.TensorDataset(training_set_tensor)
         optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=0.9)
-        training_loader = torch.utils.data.DataLoader(training_set_tensor, batch_size=self.batch_size, shuffle=True, num_workers=2)
+        training_loader = torch.utils.data.DataLoader(training_set_tensor, batch_size=self.batch_size, shuffle=True, num_workers=0)
 
         for epoch in range(self.num_epochs):
             print(f"Training epoch {epoch+1}")
