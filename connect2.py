@@ -4,7 +4,9 @@ from game import Game, Gamestate, Move
 
 class Connect2(Game):
 
-    move_cardinality = 4
+    def __init__(self) -> None:
+        self.move_cardinality = 4
+        self.state_representation_length = 4
 
     def play(self, gamestate : Gamestate, move : Move) -> Gamestate:
         new_gamestate = copy.deepcopy(gamestate)
@@ -21,6 +23,12 @@ class Connect2(Game):
 
     def create_move(self, int_representation: int) -> Move:
         return Connect2Move(int_representation)
+    
+    def from_int_list_representation(self, list_rep: list[int]) -> Gamestate:
+        return Connect2Gamestate.from_list(list_rep)
+    
+    def get_initial_position(self) -> Gamestate:
+        return Connect2Gamestate()
 
     def visualize_gamestate(self, gamestate : Gamestate):
         print("---------")
@@ -37,6 +45,33 @@ class Connect2Gamestate(Gamestate):
         super().__init__()
         self.board_state = [0, 0, 0, 0]
         self.player_to_play = 1
+        self.turn = 1
+
+    def create_move(self, int_representation: int) -> Move:
+        return Connect2Move(int_representation)
+    
+    def get_agent_index(self) -> int:
+        return self.turn
+    
+    def get_int_list_representation(self) -> list[int]:
+        return self.board_state
+    
+    def get_legal_moves(self) -> list[bool]:
+        return list(np.array(self.board_state) == 0)
+    
+    def is_legal_move(self, move: Move) -> bool:
+        return self.board_state[move.value] == 0
+    
+    def play(self, move: Move) -> Gamestate:
+        assert(self.board_state[move.value] == 0)
+        new_gs = copy.deepcopy(self)
+        new_gs.board_state[move.value] = self.turn
+        new_gs.turn *= -1
+        return new_gs
+    
+    def play_move_int(self, move_idx: int) -> Gamestate:
+        move = self.create_move(move_idx)
+        return self.play(move=move)
 
     def reward(self) -> int:
         for i in range(3):
@@ -53,6 +88,16 @@ class Connect2Gamestate(Gamestate):
             return 0
 
         return None
+    
+    def from_list(l : list[int]):
+        state = Connect2Gamestate()
+        state.board_state = l
+        placed = np.sum(np.abs(np.array(l)))
+        state.turn = 1 if placed % 2 == 0 else -1
+        return state
+    
+    def __str__(self) -> str:
+        return "|" + str(self.board_state[0]) + "|" + str(self.board_state[1]) + "|" + str(self.board_state[2]) + "|" + str(self.board_state[3]) + "|"
 
 class Connect2Move(Move):
 
@@ -62,6 +107,9 @@ class Connect2Move(Move):
 
     def get_int_representation(self) -> int:
         return self.value
+    
+    def from_int_representation(self, int_representation: int) -> Move:
+        return Connect2Move(value=int_representation)
 
 if __name__ == "__main__":
     gs = Connect2Gamestate()
