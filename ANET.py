@@ -38,19 +38,27 @@ class ConvNet(nn.Module):
 
     def __init__(self, board_state_length: int, board_dimension_depth: int, move_cardinality: int) -> None:
         super().__init__()
-        self.max = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.max = nn.MaxPool2d(kernel_size=2, stride=1)
         self.conv1 = nn.Conv2d(in_channels=board_dimension_depth, out_channels=20, kernel_size=3, stride=1, padding="same")
         self.conv2 = nn.Conv2d(in_channels=20, out_channels=50, kernel_size=3, stride=1, padding="same")
-        self.conv3 = nn.Conv2d(in_channels=50, out_channels=100, kernel_size=3, stride=1, padding="same")
-        self.fc1 = nn.Linear(board_state_length * 100, 100)
+        self.conv3 = nn.Conv2d(in_channels=50, out_channels=50, kernel_size=3, stride=1, padding="same")
+        self.conv4 = nn.Conv2d(in_channels=50, out_channels=100, kernel_size=1, stride=1)
+        self.fc1 = nn.Linear(int((np.sqrt(board_state_length)- 3) ** 2) * 100, 100)
         self.fc2 = nn.Linear(100, 40)
         self.fc3 = nn.Linear(40, move_cardinality)
 
     def forward(self, x):
+        print("BEFORE", x.shape)
         x = self.max(F.relu(self.conv1(x)))
+        print("C1", x.shape)
         x = self.max(F.relu(self.conv2(x)))
+        print("C2", x.shape)
         x = self.max(F.relu(self.conv3(x)))
+        print("C3", x.shape)
+        x = F.relu(self.conv4(x))
+        print("C4", x.shape)
         x = torch.flatten(x, 1)
+        print(x.shape)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.softmax(self.fc3(x), dim=1)
@@ -150,22 +158,8 @@ class Trainer():
 
 
 if __name__ == "__main__":
-    import torchvision
-    import torchvision.transforms as transforms
-
-    batch_size = 4
-
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                            download=True, transform=transform)
-
-    net = FFNet(3*32*32, 10)
-
-    trainer = Trainer(model=net, num_epochs=3, learning_rate=0.001, batch_size=batch_size)
-
-    trainer.train(trainset)
+    model = ConvNet(25, 3, 25)
+    from torchsummary import summary
+    summary(model, (3, 5, 5))
 
     
