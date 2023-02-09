@@ -12,9 +12,8 @@ class PytorchNN(NeuralNet):
     def __init__(self, model : nn.Module = None) -> None:
        self.model = model
 
-    def train(self, examples : np.ndarray, num_epochs : int = 3, learing_rate : float = 0.001, batch_size : int = 4):
-        trainer = Trainer(model=self.model, num_epochs=num_epochs, learning_rate=learing_rate, batch_size=batch_size)
-
+    def train(self, examples : np.ndarray, num_epochs : int = 3, learning_rate : float = 0.01, batch_size : int = 4):
+        trainer = Trainer(model=self.model, num_epochs=num_epochs, learning_rate=learning_rate, batch_size=batch_size)
         trainer.train(examples)
 
     def predict(self, data : np.ndarray) -> np.ndarray:
