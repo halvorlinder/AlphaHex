@@ -5,7 +5,7 @@ from ANET import FFNet, PytorchNN, Trainer
 import random
 import numpy as np
 from MCTS import MCTS, UCB
-from hex_agents import RandomHexAgent
+from hex_agents import RandomHexAgent, RandomConnect2Agent
 from neural_net import NeuralNet
 from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
@@ -50,6 +50,7 @@ class RL:
         training_states = []
         training_probs = []
         training_visits = []
+        training_states_full = []
         next_root = None
         while not gamestate.reward():
             mcts = MCTS(self.game, root=next_root,
@@ -59,19 +60,20 @@ class RL:
             selected_move = epsilon_greedy_choise(
                 action_probs, gamestate.get_legal_moves(), epsilon=self.epsilon)
             training_states.append(gamestate.get_int_list_representation())
+            training_states_full.append(gamestate)
             training_probs.append(action_probs)
             training_visits.append(mcts.get_visits())
             gamestate = gamestate.play_move_int(selected_move)
             next_root = mcts.get_next_root(selected_move)
         # print(training_states)
         # print(training_probs)
-        # for state, prob, visit in zip(training_states, training_probs, training_visits):
-            # print(self.game.from_int_list_representation(state))
-            # print(state)
-            # print(list(map(lambda p: str(p)[:4], prob)))
-            # print(visit)
-            # print(sum(visit))
-            # print()
+        for full, state, prob, visit in zip(training_states_full, training_states, training_probs, training_visits):
+            print(full)
+            print(state)
+            print(list(map(lambda p: str(p)[:4], prob)))
+            print(visit)
+            print(sum(visit))
+            print()
         return np.array([training_states, training_probs])
 
 
@@ -95,10 +97,25 @@ class NeuralAgent(Agent):
 
 if __name__ == "__main__":
     from hex import Hex
+    from connect2 import Connect2
     hex = Hex(3)
-    rl = RL(hex, PytorchNN(
-        FFNet(hex.state_representation_length, hex.move_cardinality)))
-    rl.train_agent(50)
+    connect2 = Connect2()
+    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
+    # pynet_1 = PytorchNN()
+    # pynet_1.load(net_1, 'agent_49')
+    # rl = RL(hex, pynet_1)
+
+    rl = RL(
+        hex, 
+        PytorchNN(
+            model=FFNet(
+            hex.state_representation_length, 
+            hex.move_cardinality
+            )
+        )
+    )
+    
+    rl.train_agent(100)
     rl.model.save('agent_1')
     # rl.train_agent(50)
     # rl.model.save('agent_100')
@@ -123,14 +140,14 @@ if __name__ == "__main__":
     # pynet_200 = PytorchNN()
     # pynet_200.load(net_200, 'agent_200')
 
-    net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    pynet_1 = PytorchNN()
-    pynet_1.load(net_1, 'agent_1')
+    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
+    # pynet_1 = PytorchNN()
+    # pynet_1.load(net_1, 'agent_1')
 
     # tourney = TournamentPlayer(Hex(5), [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ], 30, True)
     # scores, wins = tourney.play_tournament()
     # print(wins)
 
-    tourney = TournamentPlayer(Hex(3), [ NeuralAgent(pynet_1, '1'),RandomHexAgent('random'),], 100, True)
-    scores, wins = tourney.play_tournament()
-    print(wins)
+    # tourney = TournamentPlayer(Hex(3), [NeuralAgent(pynet_1, '1'), RandomHexAgent('random'),], 100, True)
+    # scores, wins = tourney.play_tournament()
+    # print(wins)
