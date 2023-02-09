@@ -1,7 +1,7 @@
 from __future__ import annotations
 from agent import Agent
 from game import Game, Gamestate
-from ANET import FFNet, PytorchNN, Trainer
+from ANET import ConvNet, FFNet, PytorchNN, Trainer
 import random
 import numpy as np
 from MCTS import MCTS, UCB
@@ -54,8 +54,8 @@ class RL:
         next_root = None
         while not gamestate.reward():
             mcts = MCTS(self.game, root=next_root,
-                        predict_func=self.model.predict)
-            action_probs = mcts.run_simulations(1000)
+                        predict_func=self.model.predict, representation=self.model.model.state_representation)
+            action_probs = mcts.run_simulations(500)
 
             selected_move = epsilon_greedy_choise(
                 action_probs, gamestate.get_legal_moves(), epsilon=self.epsilon)
@@ -108,45 +108,51 @@ if __name__ == "__main__":
     rl = RL(
         hex, 
         PytorchNN(
-            model=FFNet(
+            model=ConvNet(
             hex.state_representation_length, 
             hex.move_cardinality
             )
         )
     )
     
-    rl.train_agent(100)
-    rl.model.save('agent_1')
-    # rl.train_agent(50)
-    # rl.model.save('agent_100')
-    # rl.train_agent(50)
-    # rl.model.save('agent_150')
-    # rl.train_agent(50)
-    # rl.model.save('agent_200')
+    rl.train_agent(50)
+    rl.model.save('agent_50')
+    rl.train_agent(50)
+    rl.model.save('agent_100')
+    rl.train_agent(50)
+    rl.model.save('agent_150')
+    rl.train_agent(50)
+    rl.model.save('agent_200')
 
-    # net_50 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_50 = PytorchNN()
-    # pynet_50.load(net_50, 'agent_50')
+    net_50 = ConvNet(hex.state_representation_length, hex.move_cardinality)
+    pynet_50 = PytorchNN()
+    pynet_50.load(net_50, 'agent_50')
 
-    # net_100 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_100 = PytorchNN()
-    # pynet_100.load(net_100, 'agent_100')
+    net_100 = ConvNet(hex.state_representation_length, hex.move_cardinality)
+    pynet_100 = PytorchNN()
+    pynet_100.load(net_100, 'agent_100')
 
-    # net_150 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_150 = PytorchNN()
-    # pynet_150.load(net_150, 'agent_150')
+    net_150 = ConvNet(hex.state_representation_length, hex.move_cardinality)
+    pynet_150 = PytorchNN()
+    pynet_150.load(net_150, 'agent_150')
 
-    # net_200 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_200 = PytorchNN()
-    # pynet_200.load(net_200, 'agent_200')
+    net_200 = ConvNet(hex.state_representation_length, hex.move_cardinality)
+    pynet_200 = PytorchNN()
+    pynet_200.load(net_200, 'agent_200')
 
     # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
     # pynet_1 = PytorchNN()
     # pynet_1.load(net_1, 'agent_1')
 
-    # tourney = TournamentPlayer(Hex(5), [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ], 30, True)
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
+    tourney = TournamentPlayer(Hex(3), [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ][::-1], 30, True)
+    scores, wins = tourney.play_tournament()
+    print(wins)
+
+    # gs = hex.get_initial_position()
+    # print(pynet_50.predict(gs.get_int_list_representation()))
+    # print(pynet_100.predict(gs.get_int_list_representation()))
+    # print(pynet_150.predict(gs.get_int_list_representation()))
+    # print(pynet_200.predict(gs.get_int_list_representation()))
 
     # tourney = TournamentPlayer(Hex(3), [NeuralAgent(pynet_1, '1'), RandomHexAgent('random'),], 100, True)
     # scores, wins = tourney.play_tournament()

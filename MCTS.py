@@ -7,6 +7,8 @@ from hex import Hex
 import copy
 from torch import float32, float16, float64
 
+from representations import StateRepresentation
+
 DEBUG = False
 
 class Node():
@@ -64,10 +66,11 @@ def dummy_predict(n: int, _: Gamestate):
 
 class MCTS():
 
-    def __init__(self, game: Game, score_func=UCB, root: Node = None, predict_func=None) -> None:
+    def __init__(self, game: Game, score_func=UCB, root: Node = None, predict_func=None, representation : StateRepresentation = StateRepresentation.FLAT ) -> None:
         if DEBUG:
             print(f'Starting MCTS from')
         self.game = game
+        self.representation = representation
         if root:
             self.initial_gamestate = root.gamestate
             self.current_gamestate = root.gamestate
@@ -116,10 +119,10 @@ class MCTS():
             return
 
         # print(node.gamestate)
-        # print(np.array([node.gamestate.get_int_list_representation()]))
-        # print(len(np.array([node.gamestate.get_int_list_representation()])[0]))
+        # print(np.array([node.gamestate.get_representation(self.representation)]))
+        # print(len(np.array([node.gamestate.get_representation(self.representation)])[0]))
         action_probs = self.predict_func(
-            node.gamestate.get_int_list_representation())
+            node.gamestate.get_representation(self.representation))
         # print(action_probs)
         norm_action_probs = self.normalize_action_probs(
             action_probs=action_probs, gamestate=node.gamestate)
@@ -136,7 +139,7 @@ class MCTS():
             print(f'Starting rollout')
         while reward == None:  # i.e. we are not in a terminal state
             action_probs = self.predict_func(
-                self.current_gamestate.get_int_list_representation()
+                self.current_gamestate.get_representation(self.representation)
                 )
             norm_action_probs = self.normalize_action_probs(
                 action_probs=action_probs, 

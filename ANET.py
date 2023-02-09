@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 
 from neural_net import NeuralNet
+from representations import StateRepresentation
 
 DEBUG_MODE = True
 
@@ -36,8 +37,10 @@ class PytorchNN(NeuralNet):
 
 class ConvNet(nn.Module):
 
+
     def __init__(self, board_state_length: int, board_dimension_depth: int, move_cardinality: int) -> None:
         super().__init__()
+        self.state_representation = StateRepresentation.LAYERED
         self.max = nn.MaxPool2d(kernel_size=2, stride=2)
         self.conv1 = nn.Conv2d(in_channels=board_dimension_depth, out_channels=20, kernel_size=3, stride=1, padding="same")
         self.conv2 = nn.Conv2d(in_channels=20, out_channels=50, kernel_size=3, stride=1, padding="same")
@@ -63,6 +66,7 @@ class FFNet(nn.Module):
 
     def __init__(self, board_state_length: int = None, move_cardinality: int = None, filename : str = None) -> None:
         super().__init__()
+        self.state_representation = StateRepresentation.FLAT
         if not filename:
             self.fc1 = nn.Linear(board_state_length, 40)
             self.fc2 = nn.Linear(40, 100)

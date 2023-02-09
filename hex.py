@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from game import Game, Gamestate, Move
+from representations import StateRepresentation
 # from agent import Agent
 # from hex_agents import RandomHexAgent, HumanHexAgent
 
@@ -63,6 +64,7 @@ class Hex(Game):
         self.move_cardinality = board_size * board_size
         self.board_size = board_size
         self.state_representation_length = self.move_cardinality
+        self.conv_net_layers = 3
 
     def get_initial_position(self) -> HexState:
         return HexState(self.board_size)
@@ -104,10 +106,22 @@ class HexState(Gamestate):
     def create_move(self, int_representation: int) -> Move:
         return HexMove.from_int_representation(int_representation, self.board_size)
 
+    def get_representation(self, representation: StateRepresentation) -> np.ndarray:
+        match representation:
+            case StateRepresentation.FLAT:
+                return self.get_int_list_representation()
+            case StateRepresentation.LAYERED:
+                return self.get_layered_representation()
+            case _ :
+                raise('No representation format provided')
+
     def get_int_list_representation(self) -> list[int]:
         if(self.turn == Player.P1):
             return list(map(lambda piece: 0 if piece==Piece.Open else 1 if piece==Player.P1 else -1, np.array(self.board).flatten()))
         return list(map(lambda piece: 0 if piece==Piece.Open else -1 if piece==Player.P1 else 1, np.array(self.board).flatten()))
+
+    def get_layered_representation(self) -> list[list[list[int]]]:
+        return np.array([ list(map(lambda row: list(map(lambda p: 1 if p==piece else 0, row)), self.board)) for piece in [Piece.Open, Player.P1, Player.P2]])
         
 
 
