@@ -66,6 +66,10 @@ class Hex(Game):
 
     def get_initial_position(self) -> HexState:
         return HexState(self.board_size)
+
+    def from_int_list_representation(self, list_rep : list[int]) -> HexState:
+        return HexState.from_list(np.split(np.array(list_rep), math.isqrt(len(list_rep)))) 
+
 class HexState(Gamestate):
 
     def __init__(self, board_size: int) -> None:
@@ -101,7 +105,10 @@ class HexState(Gamestate):
         return HexMove.from_int_representation(int_representation, self.board_size)
 
     def get_int_list_representation(self) -> list[int]:
-        return list(map(lambda piece: 0 if piece==Piece.Open else 1 if piece==Player.P1 else 2, np.array(self.board).flatten()))
+        if(self.turn == Player.P1):
+            return list(map(lambda piece: 0 if piece==Piece.Open else 1 if piece==Player.P1 else -1, np.array(self.board).flatten()))
+        return list(map(lambda piece: 0 if piece==Piece.Open else -1 if piece==Player.P1 else 1, np.array(self.board).flatten()))
+        
 
 
     def from_list(l: list[list[int]]) -> HexState:
