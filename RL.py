@@ -5,10 +5,12 @@ from ANET import FFNet, PytorchNN, Trainer
 import random
 import numpy as np
 from MCTS import MCTS, UCB
-from hex_agents import RandomHexAgent, RandomConnect2Agent
+from hex_agents import RandomHexAgent, RandomConnect2Agent, MCTSHexAgent
 from neural_net import NeuralNet
 from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
+
+import CONSTANTS
 
 
 class RL:
@@ -55,7 +57,7 @@ class RL:
         while not gamestate.reward():
             mcts = MCTS(self.game, root=next_root,
                         predict_func=self.model.predict)
-            action_probs = mcts.run_simulations(1000)
+            action_probs = mcts.run_simulations(CONSTANTS.ROLLOUTS)
 
             selected_move = epsilon_greedy_choise(
                 action_probs, gamestate.get_legal_moves(), epsilon=self.epsilon)
@@ -105,18 +107,18 @@ if __name__ == "__main__":
     # pynet_1.load(net_1, 'agent_49')
     # rl = RL(hex, pynet_1)
 
-    rl = RL(
-        hex, 
-        PytorchNN(
-            model=FFNet(
-            hex.state_representation_length, 
-            hex.move_cardinality
-            )
-        )
-    )
+    # rl = RL(
+    #     hex, 
+    #     PytorchNN(
+    #         model=FFNet(
+    #         hex.state_representation_length, 
+    #         hex.move_cardinality
+    #         )
+    #     )
+    # )
     
-    rl.train_agent(100)
-    rl.model.save('agent_1')
+    # rl.train_agent(100)
+    # rl.model.save('agent_1')
     # rl.train_agent(50)
     # rl.model.save('agent_100')
     # rl.train_agent(50)
@@ -151,3 +153,8 @@ if __name__ == "__main__":
     # tourney = TournamentPlayer(Hex(3), [NeuralAgent(pynet_1, '1'), RandomHexAgent('random'),], 100, True)
     # scores, wins = tourney.play_tournament()
     # print(wins)
+
+
+    tourney = TournamentPlayer(Hex(4), [MCTSHexAgent("MCTS", 1000, 4), RandomHexAgent('random')][::-1], 100, True)
+    scores, wins = tourney.play_tournament()
+    print(wins)
