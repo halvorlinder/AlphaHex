@@ -2,12 +2,14 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 from agent import SpecializedAgent
-from hex import HexState, HexMove, Piece
+from hex import HexState, HexMove, Piece, Hex
 from connect2 import Connect2Gamestate, Connect2Move
+from MCTS import MCTS, Node
 if TYPE_CHECKING:
     from agent import Agent
 
 from random import randrange
+import numpy as np
 
 # class HexAgentType(Enum):
 #     RANDOM = auto()
@@ -40,6 +42,19 @@ class RandomHexAgent(SpecializedAgent):
             n = randrange(0, gamestate.board_size*gamestate.board_size)
             if gamestate.is_open(gamestate.create_move(n)):
                 return n
+
+class MCTSHexAgent(SpecializedAgent):
+
+    def __init__(self, name : str, n_rollouts : int, board_size : int) -> None:
+        self.name = name
+        self.n = n_rollouts
+        self.game = Hex(board_size)
+
+    def get_next_move(self, gamestate: HexState) -> int:
+        mcts = MCTS(self.game, root = Node(gamestate))
+        probs = mcts.run_simulations(self.n) 
+        move = np.argmax(probs)
+        return move
             
 class RandomConnect2Agent(SpecializedAgent):
 
