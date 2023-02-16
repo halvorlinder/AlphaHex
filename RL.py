@@ -85,7 +85,7 @@ class NeuralAgent(Agent):
             self.name = name
 
     def get_next_move(self, gamestate: Gamestate) -> int:
-        prediction = self.neural_net.predict(gamestate.get_int_list_representation())
+        prediction = self.neural_net.predict(gamestate.get_representation(self.neural_net.model.state_representation))
         # print(prediction)
         # print(filter_and_normalize(prediction, gamestate.get_legal_moves()))
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
@@ -110,6 +110,7 @@ if __name__ == "__main__":
         PytorchNN(
             model=ConvNet(
             hex.state_representation_length, 
+            hex.conv_net_layers, 
             hex.move_cardinality
             )
         )

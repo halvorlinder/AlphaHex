@@ -1,6 +1,6 @@
-import enum
+from enum import Enum, auto
 
 
-class StateRepresentation(enum):
-    FLAT = enum.auto()
-    LAYERED = enum.auto()
+class StateRepresentation(Enum):
+    FLAT = auto()
+    LAYERED = auto()
