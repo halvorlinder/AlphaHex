@@ -8,14 +8,16 @@ import math
 from neural_net import NeuralNet
 from representations import StateRepresentation
 
+import CONSTANTS
+
 DEBUG_MODE = True
 
 class PytorchNN(NeuralNet):
-    def __init__(self, model : nn.Module = None, num_epochs : int = 1, learning_rate : float = 0.01, batch_size : int = 4) -> None:
+    def __init__(self, model : nn.Module = None) -> None:
        self.model = model
-       self.num_epochs = num_epochs
-       self.learning_rate = learning_rate
-       self.batch_size = batch_size
+       self.num_epochs = CONSTANTS.NUM_EPOCHS
+       self.learning_rate = CONSTANTS.LEARNING_RATE
+       self.batch_size = CONSTANTS.BATCH_SIZE
 
     def train(self, examples : np.ndarray):
         trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)

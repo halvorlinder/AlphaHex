@@ -4,17 +4,16 @@ import random
 from game import Game, Gamestate, Move
 from connect2 import Connect2, Connect2Gamestate
 from hex import Hex
-import copy
 from torch import float32, float16, float64
 
 from representations import StateRepresentation
+import CONSTANTS
 
 DEBUG = False
 
 class Node():
 
-    def __init__(self, prior: float, gamestate: Gamestate):
-        self.prior = prior
+    def __init__(self, gamestate: Gamestate):
         self.gamestate = gamestate
         self.children = {}
         self.value = 0
@@ -26,8 +25,7 @@ class Node():
                 #TODO: Should check legal instead 
                 new_move = self.gamestate.create_move(action)
                 new_gamestate = self.gamestate.play(move=new_move)
-                self.children[action] = Node(
-                    prior=prob, gamestate=new_gamestate)
+                self.children[action] = Node(gamestate=new_gamestate)
 
     def select_child(self, score_func):
         # TODO Is this not just argmax, if so refactor to make it more readable (np.argmax)
@@ -50,11 +48,10 @@ class Node():
 #     prior_score = child.prior * np.sqrt(parent.visits) / (child.visits + 1)
 #     value_score = child.value / child.visits if child.visits > 0 else 0
 #     return prior_score + value_score
-SQRT_2 = 1.41
 
 
 def UCB(parent, child):
-    explore = SQRT_2 * np.sqrt(np.log(parent.visits) / (child.visits + 1))
+    explore = CONSTANTS.SQRT_2 * np.sqrt(np.log(parent.visits) / (child.visits + 1))
     exploit = child.value / (child.visits + 1)
     return explore + exploit
 
@@ -79,7 +76,7 @@ class MCTS():
         else:
             self.initial_gamestate = game.get_initial_position()
             self.current_gamestate = game.get_initial_position()
-            self.root = Node(prior=-1, gamestate=self.initial_gamestate)
+            self.root = Node(gamestate=self.initial_gamestate)
         if DEBUG:
             print(self.initial_gamestate)
             print(f'With {self.root.visits} previous visits')
@@ -133,8 +130,7 @@ class MCTS():
 
         leaf_node = node
         self.current_gamestate = leaf_node.gamestate
-        # TODO constant
-        epsilon = 0.1
+
         if DEBUG:
             print(f'Starting rollout')
         while reward == None:  # i.e. we are not in a terminal state
@@ -150,7 +146,7 @@ class MCTS():
             # select next move in rollout phase
             choose_random = random.random()
             move = None
-            if choose_random < epsilon:
+            if choose_random < CONSTANTS.MCTS_EPSILON:
                 if DEBUG: 
                     print(f'\tEpsilon choice')
                 true_idx = np.argwhere(
