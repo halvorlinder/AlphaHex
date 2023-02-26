@@ -40,10 +40,17 @@ class RL:
     def train_agent(self, num_games: int) -> None:
         # Might need some more args to configure the MCTS
         # trainer = Trainer(self.agent.neural_network, 1, 0.05, 8)
-        for n in range(num_games):
-            print(n)
-            inputs, labels = self.play_game()
-            self.model.train(inputs, labels)
+        with open("examples.txt", "w", encoding="utf-8") as f:
+            for n in range(num_games):
+                print(n)
+                inputs, labels = self.play_game()
+                if(num_games - n < 5):
+                    for i, l in zip(inputs, labels):
+                        i = [str(x) for x in i]
+                        l = [str(round(x, 3)) for x in l]
+                        f.write(";".join(list(i)) + "\n")
+                        f.write(";".join(list(l)) + "\n")
+                self.model.train(inputs, labels)
         # self.model.save('heisann')
 
     def play_game(self) -> np.ndarray:
@@ -116,9 +123,9 @@ if __name__ == "__main__":
             )
         )
     )
-    
-    rl.train_agent(100)
-    rl.model.save('agent_100')
+
+    rl.train_agent(1000)
+    rl.model.save('agent_1000')
 
     # rl.train_agent(250)
     # rl.model.save('agent_500')
@@ -137,9 +144,9 @@ if __name__ == "__main__":
     # pynet_50 = PytorchNN()
     # pynet_50.load(net_50, 'agent_50')
 
-    net_100 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    pynet_100 = PytorchNN()
-    pynet_100.load(net_100, 'agent_100')
+    # net_100 = FFNet(hex.state_representation_length, hex.move_cardinality)
+    # pynet_100 = PytorchNN()
+    # pynet_100.load(net_100, 'agent_100')
 
     # net_150 = FFNet(hex.state_representation_length, hex.move_cardinality)
     # pynet_150 = PytorchNN()
@@ -153,9 +160,9 @@ if __name__ == "__main__":
     # pynet_100 = PytorchNN()
     # pynet_100.load(net_1, 'agent_100')
 
-    tourney = TournamentPlayer(Hex(3), [RandomHexAgent('random'), NeuralAgent(pynet_100, '100')], 100, True)
-    scores, wins = tourney.play_tournament()
-    print(wins)
+    # tourney = TournamentPlayer(Hex(3), [RandomHexAgent('random'), NeuralAgent(pynet_100, '100')], 100, True)
+    # scores, wins = tourney.play_tournament()
+    # print(wins)
 
     # tourney = TournamentPlayer(Hex(3), [NeuralAgent(pynet_1, '1'), RandomHexAgent('random'),], 100, True)
     # scores, wins = tourney.play_tournament()
