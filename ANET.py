@@ -33,7 +33,7 @@ class PytorchNN(NeuralNet):
         # print(data)
         # print(np.array([data], dtype=float))
         output : torch.Tensor = self.model.forward(torch.tensor(np.array([data], dtype=float)).to(torch.float32))
-        return output.detach().numpy().flatten()
+        return torch.nn.functional.softmax(output).detach().numpy().flatten()
 
     def save(self, filename: str):
         torch.save(self.model.state_dict(), filename)
