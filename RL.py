@@ -42,8 +42,8 @@ class RL:
         # trainer = Trainer(self.agent.neural_network, 1, 0.05, 8)
         for n in range(num_games):
             print(n)
-            training_examples = self.play_game()
-            self.model.train(training_examples)
+            inputs, labels = self.play_game()
+            self.model.train(inputs, labels)
         # self.model.save('heisann')
 
     def play_game(self) -> np.ndarray:
@@ -76,7 +76,7 @@ class RL:
         #     print(visit)
         #     print(sum(visit))
         #     print()
-        return np.array([training_states, training_probs])
+        return [np.array(training_states), np.array(training_probs)]
 
 
 class NeuralAgent(Agent):
@@ -90,8 +90,8 @@ class NeuralAgent(Agent):
         prediction = self.neural_net.predict(gamestate.get_representation(self.neural_net.model.state_representation))
         # print(prediction)
         # print(filter_and_normalize(prediction, gamestate.get_legal_moves()))
+        prediction = np.exp(prediction)/sum(np.exp(prediction)) # apply softmax to avoid negative probabilities
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
-        print(probs)
         move = np.random.choice([n for n in range(len(probs))], p=probs)
         # move = epsilon_greedy_choise(filter_and_normalize(prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
         # print(move)
@@ -145,8 +145,8 @@ if __name__ == "__main__":
     # pynet_200.load(net_200, 'agent_200')
 
     # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_1 = PytorchNN()
-    # pynet_1.load(net_1, 'agent_1')
+    # pynet_100 = PytorchNN()
+    # pynet_100.load(net_1, 'agent_100')
 
     # tourney = TournamentPlayer(Hex(3), [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ][::-1], 30, True)
     # scores, wins = tourney.play_tournament()
