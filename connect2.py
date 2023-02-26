@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 from game import Game, Gamestate, Move
+from representations import StateRepresentation
 
 class Connect2(Game):
 
@@ -42,19 +43,26 @@ class Connect2(Game):
 class Connect2Gamestate(Gamestate):
 
     def __init__(self) -> None:
-        super().__init__()
         self.board_state = [0, 0, 0, 0]
         self.player_to_play = 1
         self.turn = 1
+        self.agent_index = 0
 
     def create_move(self, int_representation: int) -> Move:
         return Connect2Move(int_representation)
     
     def get_agent_index(self) -> int:
-        return self.turn
+        return self.agent_index
     
     def get_int_list_representation(self) -> list[int]:
         return self.board_state
+
+    def get_representation(self, representation : StateRepresentation) -> np.ndarray:
+        match representation:
+            case StateRepresentation.FLAT:
+                return self.get_int_list_representation()
+            case StateRepresentation.LAYERED:
+                raise NotImplementedError()
     
     def get_legal_moves(self) -> list[bool]:
         return list(np.array(self.board_state) == 0)
@@ -67,6 +75,7 @@ class Connect2Gamestate(Gamestate):
         new_gs = copy.deepcopy(self)
         new_gs.board_state[move.value] = self.turn
         new_gs.turn *= -1
+        new_gs.agent_index = 1 if self.agent_index == 0 else 0
         return new_gs
     
     def play_move_int(self, move_idx: int) -> Gamestate:
@@ -102,7 +111,6 @@ class Connect2Gamestate(Gamestate):
 class Connect2Move(Move):
 
     def __init__(self, value: int) -> None:
-        super().__init__()
         self.value = value
 
     def get_int_representation(self) -> int:
