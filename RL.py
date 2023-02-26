@@ -1,5 +1,6 @@
 from __future__ import annotations
 from agent import Agent
+from connect2agents import HumanConnect2Agent
 from game import Game, Gamestate
 from ANET import ConvNet, FFNet, PytorchNN, Trainer
 import random
@@ -43,6 +44,8 @@ class RL:
         for n in range(num_games):
             print(n)
             inputs, labels = self.play_game()
+            print(inputs)
+            print(labels)
             self.model.train(inputs, labels)
         # self.model.save('heisann')
 
@@ -55,9 +58,13 @@ class RL:
         training_states_full = []
         next_root = None
         while gamestate.reward()==None:
+            print(gamestate)
             mcts = MCTS(self.game, root=next_root,
                         predict_func=self.model.predict, representation=self.model.model.state_representation)
             action_probs = mcts.run_simulations(CONSTANTS.ROLLOUTS)
+            # print(gamestate.board)
+            # print(action_probs)
+            # print(gamestate.get_legal_moves())
 
             selected_move = epsilon_greedy_choise(
                 action_probs, gamestate.get_legal_moves(), epsilon=self.epsilon)
@@ -67,8 +74,8 @@ class RL:
             training_visits.append(mcts.get_visits())
             gamestate = gamestate.play_move_int(selected_move)
             next_root = mcts.get_next_root(selected_move)
-        print(training_states)
-        print(training_probs)
+        # print(training_states)
+        # print(training_probs)
         # for full, state, prob, visit in zip(training_states_full, training_states, training_probs, training_visits):
         #     print(full)
         #     print(state)
@@ -90,7 +97,6 @@ class NeuralAgent(Agent):
         prediction = self.neural_net.predict(gamestate.get_representation(self.neural_net.model.state_representation))
         # print(prediction)
         # print(filter_and_normalize(prediction, gamestate.get_legal_moves()))
-        prediction = np.exp(prediction)/sum(np.exp(prediction)) # apply softmax to avoid negative probabilities
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
         move = np.random.choice([n for n in range(len(probs))], p=probs)
         # move = epsilon_greedy_choise(filter_and_normalize(prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
@@ -102,11 +108,14 @@ if __name__ == "__main__":
     from connect2 import Connect2
     hex = Hex(3)
     connect2 = Connect2()
-    game = connect2
+    game = hex
     # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
     # pynet_1 = PytorchNN()
     # pynet_1.load(net_1, 'agent_49')
     # rl = RL(hex, pynet_1)
+
+    # mcts = MCTS(game)
+    # print(mcts.run_simulations(1000))
 
     rl = RL(
         game, 
@@ -119,26 +128,26 @@ if __name__ == "__main__":
         epsilon=CONSTANTS.GAME_MOVE_EPSILON
     )
     
-    # rl.train_agent(1000)
+    # rl.train_agent(500)
     # rl.model.save('agent_50')
-    # rl.train_agent(50)
+    # rl.train_agent(500)
     # rl.model.save('agent_100')
-    # rl.train_agent(50)
+    # rl.train_agent(500)
     # rl.model.save('agent_150')
-    # rl.train_agent(50)
+    # rl.train_agent(500)
     # rl.model.save('agent_200')
 
     net_50 = FFNet(game.state_representation_length, game.move_cardinality)
     pynet_50 = PytorchNN()
     pynet_50.load(net_50, 'agent_50')
 
-    # net_100 = ConvNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_100 = PytorchNN()
-    # pynet_100.load(net_100, 'agent_100')
+    net_100 = FFNet(game.state_representation_length, game.move_cardinality)
+    pynet_100 = PytorchNN()
+    pynet_100.load(net_100, 'agent_100')
 
-    # net_150 = ConvNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_150 = PytorchNN()
-    # pynet_150.load(net_150, 'agent_150')
+    net_150 = FFNet(game.state_representation_length, game.move_cardinality)
+    pynet_150 = PytorchNN()
+    pynet_150.load(net_150, 'agent_150')
 
     # net_200 = ConvNet(hex.state_representation_length, hex.move_cardinality)
     # pynet_200 = PytorchNN()
@@ -149,8 +158,6 @@ if __name__ == "__main__":
     # pynet_100.load(net_1, 'agent_100')
 
     # tourney = TournamentPlayer(Hex(3), [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ][::-1], 30, True)
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
 
     gs = game.get_initial_position()
     print(pynet_50.predict(gs.get_int_list_representation()))
@@ -158,11 +165,11 @@ if __name__ == "__main__":
     # print(pynet_150.predict(gs.get_int_list_representation()))
     # print(pynet_200.predict(gs.get_int_list_representation()))
 
+    tourney = TournamentPlayer(game, [NeuralAgent(pynet_50, '500'),NeuralAgent(pynet_100, '1000'),NeuralAgent(pynet_150, '1500'), RandomHexAgent('RAND')], 50, True)
+
     # tourney = TournamentPlayer(Hex(3), [NeuralAgent(pynet_1, '1'), RandomHexAgent('random'),], 100, True)
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
 
 
     # tourney = TournamentPlayer(Hex(4), [MCTSHexAgent("MCTS", 1000, 4), RandomHexAgent('random')][::-1], 100, True)
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
+    scores, wins = tourney.play_tournament()
+    print(wins)

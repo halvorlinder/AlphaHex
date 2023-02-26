@@ -55,7 +55,8 @@ class Connect2Gamestate(Gamestate):
         return self.agent_index
     
     def get_int_list_representation(self) -> list[int]:
-        return self.board_state
+        # return self.board_state
+        return [p if self.turn == 1 else -p for p in self.board_state]
 
     def get_representation(self, representation : StateRepresentation) -> np.ndarray:
         match representation:

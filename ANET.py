@@ -25,8 +25,8 @@ class PytorchNN(NeuralNet):
         y = torch.tensor(y, dtype=torch.float32)
         examples = data_utils.TensorDataset(x, y)
         trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
-        print(np.array(examples))
-        trainer.train(np.array(examples))
+        # print(np.array(examples))
+        trainer.train(examples)
 
     # def train(self, examples : np.ndarray):
     #     trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
@@ -36,7 +36,7 @@ class PytorchNN(NeuralNet):
         # print(data)
         # print(np.array([data], dtype=float))
         output : torch.Tensor = self.model.forward(torch.tensor(np.array([data], dtype=float)).to(torch.float32))
-        return output.detach().numpy().flatten()
+        return torch.nn.functional.softmax(output).detach().numpy().flatten()
 
     def save(self, filename: str):
         torch.save(self.model.state_dict(), filename)
