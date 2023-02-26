@@ -3,12 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import datetime
 import numpy as np
+import torch.utils.data as data_utils
 
 from neural_net import NeuralNet
 
 import CONSTANTS
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 class PytorchNN(NeuralNet):
     def __init__(self, model : nn.Module = None) -> None:
@@ -17,9 +18,16 @@ class PytorchNN(NeuralNet):
        self.learning_rate = CONSTANTS.LEARNING_RATE
        self.batch_size = CONSTANTS.BATCH_SIZE
 
-    def train(self, examples : np.ndarray):
+    def train(self, x : np.ndarray, y):
+        x = torch.tensor(x, dtype=torch.float32)
+        y = torch.tensor(y, dtype=torch.float32)
+        examples = data_utils.TensorDataset(x, y)
         trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
         trainer.train(examples)
+
+    # def train(self, examples : np.ndarray):
+    #     trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
+    #     trainer.train(examples)
 
     def predict(self, data : np.ndarray) -> np.ndarray:
         # print(data)
@@ -74,19 +82,19 @@ class FFNet(nn.Module):
     def __init__(self, board_state_length: int = None, move_cardinality: int = None, filename : str = None) -> None:
         super().__init__()
         if not filename:
-            self.fc1 = nn.Linear(board_state_length, 40)
-            self.fc2 = nn.Linear(40, 100)
-            self.fc3 = nn.Linear(100, 40)
-            self.fc4 = nn.Linear(40, move_cardinality)
+            self.fc1 = nn.Linear(board_state_length, 20)
+            self.fc2 = nn.Linear(20, 20)
+            # self.fc3 = nn.Linear(100, 20)
+            self.fc4 = nn.Linear(20, move_cardinality)
         else: 
             self.load_state_dict(torch.load(filename))
 
     def forward(self, x):
-        x = torch.flatten(x, 1)
+        # x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.softmax(self.fc4(x), dim=1)
+        #x = F.relu(self.fc3(x))
+        x = self.fc4(x)
         return x
     
 
@@ -104,11 +112,14 @@ class Trainer():
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.loss_fn = nn.CrossEntropyLoss()
+        # self.loss_fn = nn.MSELoss()
 
     def train_one_epoch(self, optimizer: torch.optim.Optimizer, training_loader, epoch: int):
         running_loss = 0.
+        total_loss = 0.
 
         for i, data in enumerate(training_loader):
+            # print(i)
             inputs, labels = data
 
             optimizer.zero_grad()
@@ -133,17 +144,17 @@ class Trainer():
                 print(f"Loss: {loss}")
 
             running_loss += loss.item()
+            total_loss += loss.item()
             if i % 2000 == 1999:    # print every 2000 mini-batches
                 print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
                 running_loss = 0.0
 
-        return running_loss / (i+1)
+        return total_loss / (i+1)
 
-    def train(self, training_set: np.array):
-        training_set_tensor = torch.tensor(training_set, dtype=torch.float32)
+    def train(self, tensor_dataset: data_utils.TensorDataset):
         #torch_dataset = torch.TensorDataset(training_set_tensor)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=0.9)
-        training_loader = torch.utils.data.DataLoader(training_set_tensor, batch_size=self.batch_size, shuffle=True, num_workers=0)
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate)
+        training_loader = torch.utils.data.DataLoader(tensor_dataset, batch_size=self.batch_size, shuffle=True, num_workers=0)
 
         for epoch in range(self.num_epochs):
             print(f"Training epoch {epoch+1}")
@@ -152,7 +163,7 @@ class Trainer():
 
             avg_loss = self.train_one_epoch(optimizer=optimizer, training_loader=training_loader, epoch=epoch)
             
-            # print("Loss: ", avg_loss)
+            print("Loss: ", avg_loss)
 
             #model_path = 'model_{}_{}'.format("fake", epoch)
             #self.model.save(model_path)
@@ -160,8 +171,31 @@ class Trainer():
 
 
 if __name__ == "__main__":
-    model = ConvNet(25, 3, 25)
-    from torchsummary import summary
-    summary(model, (3, 5, 5))
+    # model = ConvNet(25, 3, 25)
+    # from torchsummary import summary
+    # summary(model, (3, 5, 5))
+    import matplotlib.pyplot as plt
 
+    x = np.random.uniform(-5, 5, 1000)
+    x = x.reshape(1000, 1)
+
+    noise = np.random.uniform(-0.1, 0.1, 1000).reshape(1000, 1)
+    y = np.add(np.power(x, 2), noise)
+
+    x = torch.tensor(x, dtype=torch.float32)
+    y = torch.tensor(y, dtype=torch.float32)
+
+    net = FFNet(1, 1)
+
+    trainer = Trainer(net, 4, 0.001, 8)
+
+    train_set = data_utils.TensorDataset(x, y)
+
+    trainer.train(train_set)
+    
+    vals = net(x.clone().detach())
+    vals = vals.detach().numpy().flatten()
+    plt.plot(x, vals, "*", color="red")
+    plt.plot(x, y, "*", color="blue")
+    plt.show()
     
