@@ -54,28 +54,28 @@ class RL:
         training_visits = []
         training_states_full = []
         next_root = None
-        while not gamestate.reward():
+        while gamestate.reward()==None:
             mcts = MCTS(self.game, root=next_root,
                         predict_func=self.model.predict, representation=self.model.model.state_representation)
             action_probs = mcts.run_simulations(CONSTANTS.ROLLOUTS)
 
             selected_move = epsilon_greedy_choise(
                 action_probs, gamestate.get_legal_moves(), epsilon=self.epsilon)
-            training_states.append(gamestate.get_int_list_representation())
+            training_states.append(gamestate.get_representation(self.model.model.state_representation))
             training_states_full.append(gamestate)
             training_probs.append(action_probs)
             training_visits.append(mcts.get_visits())
             gamestate = gamestate.play_move_int(selected_move)
             next_root = mcts.get_next_root(selected_move)
-        # print(training_states)
-        # print(training_probs)
-        for full, state, prob, visit in zip(training_states_full, training_states, training_probs, training_visits):
-            print(full)
-            print(state)
-            print(list(map(lambda p: str(p)[:4], prob)))
-            print(visit)
-            print(sum(visit))
-            print()
+        print(training_states)
+        print(training_probs)
+        # for full, state, prob, visit in zip(training_states_full, training_states, training_probs, training_visits):
+        #     print(full)
+        #     print(state)
+        #     print(list(map(lambda p: str(p)[:4], prob)))
+        #     print(visit)
+        #     print(sum(visit))
+        #     print()
         return np.array([training_states, training_probs])
 
 
@@ -102,23 +102,24 @@ if __name__ == "__main__":
     from connect2 import Connect2
     hex = Hex(3)
     connect2 = Connect2()
+    game = connect2
     # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
     # pynet_1 = PytorchNN()
     # pynet_1.load(net_1, 'agent_49')
     # rl = RL(hex, pynet_1)
 
-    # rl = RL(
-    #     hex, 
-    #     PytorchNN(
-    #         model=ConvNet(
-    #         hex.state_representation_length, 
-    #         hex.conv_net_layers, 
-    #         hex.move_cardinality
-    #         )
-    #     )
-    # )
+    rl = RL(
+        game, 
+        PytorchNN(
+            model=FFNet(
+            game.state_representation_length, 
+            game.move_cardinality
+            )
+        ),
+        epsilon=CONSTANTS.GAME_MOVE_EPSILON
+    )
     
-    # rl.train_agent(50)
+    # rl.train_agent(1000)
     # rl.model.save('agent_50')
     # rl.train_agent(50)
     # rl.model.save('agent_100')
@@ -127,9 +128,9 @@ if __name__ == "__main__":
     # rl.train_agent(50)
     # rl.model.save('agent_200')
 
-    # net_50 = ConvNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_50 = PytorchNN()
-    # pynet_50.load(net_50, 'agent_50')
+    net_50 = FFNet(game.state_representation_length, game.move_cardinality)
+    pynet_50 = PytorchNN()
+    pynet_50.load(net_50, 'agent_50')
 
     # net_100 = ConvNet(hex.state_representation_length, hex.move_cardinality)
     # pynet_100 = PytorchNN()
@@ -151,8 +152,8 @@ if __name__ == "__main__":
     # scores, wins = tourney.play_tournament()
     # print(wins)
 
-    # gs = hex.get_initial_position()
-    # print(pynet_50.predict(gs.get_int_list_representation()))
+    gs = game.get_initial_position()
+    print(pynet_50.predict(gs.get_int_list_representation()))
     # print(pynet_100.predict(gs.get_int_list_representation()))
     # print(pynet_150.predict(gs.get_int_list_representation()))
     # print(pynet_200.predict(gs.get_int_list_representation()))
@@ -162,6 +163,6 @@ if __name__ == "__main__":
     # print(wins)
 
 
-    tourney = TournamentPlayer(Hex(4), [MCTSHexAgent("MCTS", 1000, 4), RandomHexAgent('random')][::-1], 100, True)
-    scores, wins = tourney.play_tournament()
-    print(wins)
+    # tourney = TournamentPlayer(Hex(4), [MCTSHexAgent("MCTS", 1000, 4), RandomHexAgent('random')][::-1], 100, True)
+    # scores, wins = tourney.play_tournament()
+    # print(wins)
