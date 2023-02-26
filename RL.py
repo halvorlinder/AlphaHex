@@ -42,8 +42,8 @@ class RL:
         # trainer = Trainer(self.agent.neural_network, 1, 0.05, 8)
         for n in range(num_games):
             print(n)
-            training_examples = self.play_game()
-            self.model.train(training_examples)
+            inputs, labels = self.play_game()
+            self.model.train(inputs, labels)
         # self.model.save('heisann')
 
     def play_game(self) -> np.ndarray:
@@ -69,14 +69,14 @@ class RL:
             next_root = mcts.get_next_root(selected_move)
         # print(training_states)
         # print(training_probs)
-        for full, state, prob, visit in zip(training_states_full, training_states, training_probs, training_visits):
-            print(full)
-            print(state)
-            print(list(map(lambda p: str(p)[:4], prob)))
-            print(visit)
-            print(sum(visit))
-            print()
-        return np.array([training_states, training_probs])
+        # for full, state, prob, visit in zip(training_states_full, training_states, training_probs, training_visits):
+        #     print(full)
+        #     print(state)
+        #     print(list(map(lambda p: str(p)[:4], prob)))
+        #     print(visit)
+        #     print(sum(visit))
+        #     print()
+        return [np.array(training_states), np.array(training_probs)]
 
 
 class NeuralAgent(Agent):
@@ -90,8 +90,8 @@ class NeuralAgent(Agent):
         prediction = self.neural_net.predict(gamestate.get_int_list_representation())
         # print(prediction)
         # print(filter_and_normalize(prediction, gamestate.get_legal_moves()))
+        prediction = np.exp(prediction)/sum(np.exp(prediction)) # apply softmax to avoid negative probabilities
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
-        print(probs)
         move = np.random.choice([n for n in range(len(probs))], p=probs)
         # move = epsilon_greedy_choise(filter_and_normalize(prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
         # print(move)
@@ -107,18 +107,25 @@ if __name__ == "__main__":
     # pynet_1.load(net_1, 'agent_49')
     # rl = RL(hex, pynet_1)
 
-    # rl = RL(
-    #     hex, 
-    #     PytorchNN(
-    #         model=FFNet(
-    #         hex.state_representation_length, 
-    #         hex.move_cardinality
-    #         )
-    #     )
-    # )
+    rl = RL(
+        hex, 
+        PytorchNN(
+            model=FFNet(
+            hex.state_representation_length, 
+            hex.move_cardinality
+            )
+        )
+    )
     
-    # rl.train_agent(100)
-    # rl.model.save('agent_1')
+    rl.train_agent(100)
+    rl.model.save('agent_100')
+
+    # rl.train_agent(250)
+    # rl.model.save('agent_500')
+    # rl.train_agent(250)
+    # rl.model.save('agent_750')
+    # rl.train_agent(250)
+    # rl.model.save('agent_1000')
     # rl.train_agent(50)
     # rl.model.save('agent_100')
     # rl.train_agent(50)
@@ -130,9 +137,9 @@ if __name__ == "__main__":
     # pynet_50 = PytorchNN()
     # pynet_50.load(net_50, 'agent_50')
 
-    # net_100 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_100 = PytorchNN()
-    # pynet_100.load(net_100, 'agent_100')
+    net_100 = FFNet(hex.state_representation_length, hex.move_cardinality)
+    pynet_100 = PytorchNN()
+    pynet_100.load(net_100, 'agent_100')
 
     # net_150 = FFNet(hex.state_representation_length, hex.move_cardinality)
     # pynet_150 = PytorchNN()
@@ -143,18 +150,18 @@ if __name__ == "__main__":
     # pynet_200.load(net_200, 'agent_200')
 
     # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_1 = PytorchNN()
-    # pynet_1.load(net_1, 'agent_1')
+    # pynet_100 = PytorchNN()
+    # pynet_100.load(net_1, 'agent_100')
 
-    # tourney = TournamentPlayer(Hex(5), [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ], 30, True)
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
+    tourney = TournamentPlayer(Hex(3), [RandomHexAgent('random'), NeuralAgent(pynet_100, '100')], 100, True)
+    scores, wins = tourney.play_tournament()
+    print(wins)
 
     # tourney = TournamentPlayer(Hex(3), [NeuralAgent(pynet_1, '1'), RandomHexAgent('random'),], 100, True)
     # scores, wins = tourney.play_tournament()
     # print(wins)
 
 
-    tourney = TournamentPlayer(Hex(4), [MCTSHexAgent("MCTS", 1000, 4), RandomHexAgent('random')][::-1], 100, True)
-    scores, wins = tourney.play_tournament()
-    print(wins)
+    # tourney = TournamentPlayer(Hex(4), [MCTSHexAgent("MCTS1", 1000, 4), MCTSHexAgent("MCTS2", 1000, 4)][::1], 100, True)
+    # scores, wins = tourney.play_tournament()
+    # print(wins)
