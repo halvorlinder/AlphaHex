@@ -10,6 +10,7 @@ from hex_agents import RandomHexAgent, RandomConnect2Agent, MCTSHexAgent
 from neural_net import NeuralNet
 from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
+import multiprocessing as mp
 
 import CONSTANTS
 
@@ -39,15 +40,22 @@ class RL:
         self.model.load(filename)
 
     def train_agent(self, num_games: int) -> None:
-        # Might need some more args to configure the MCTS
-        # trainer = Trainer(self.agent.neural_network, 1, 0.05, 8)
-        for n in range(num_games):
-            print(n)
-            inputs, labels = self.play_game()
-            print(inputs)
-            print(labels)
-            self.model.train(inputs, labels)
-        # self.model.save('heisann')
+        if CONSTANTS.M_THREAD:
+            for n in range(num_games//CONSTANTS.CORES):
+                print(n*CONSTANTS.CORES)
+                examples = list(mp.Pool(CONSTANTS.CORES).map(RL.play_game, [self]*CONSTANTS.CORES))
+                inputs = np.concatenate([inputs for (inputs, _) in examples])
+                labels = np.concatenate([labels for (_, labels) in examples])
+                print(inputs)
+                print(labels)
+                self.model.train(inputs, labels)
+        else:
+            for n in range(num_games):
+                print(n)
+                inputs, labels = self.play_game()
+                print(inputs)
+                print(labels)
+                self.model.train(inputs, labels)
 
     def play_game(self) -> np.ndarray:
         # TODO not quite sure of the numpy code here
@@ -106,7 +114,7 @@ class NeuralAgent(Agent):
 if __name__ == "__main__":
     from hex import Hex
     from connect2 import Connect2
-    hex = Hex(3)
+    hex = Hex(4)
     connect2 = Connect2()
     game = hex
     # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
@@ -128,48 +136,52 @@ if __name__ == "__main__":
         epsilon=CONSTANTS.GAME_MOVE_EPSILON
     )
     
-    # rl.train_agent(500)
-    # rl.model.save('agent_50')
-    # rl.train_agent(500)
-    # rl.model.save('agent_100')
-    # rl.train_agent(500)
-    # rl.model.save('agent_150')
-    # rl.train_agent(500)
-    # rl.model.save('agent_200')
+    # rl.train_agent(100)
+    # rl.model.save('agent_50_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_100_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_150_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_200_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_250_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_300_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_350_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_400_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_450_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_500_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_550_4')
+    # rl.train_agent(100)
+    # rl.model.save('agent_600_4')
 
-    net_50 = FFNet(game.state_representation_length, game.move_cardinality)
-    pynet_50 = PytorchNN()
-    pynet_50.load(net_50, 'agent_50')
+    # net_50 = FFNet(game.state_representation_length, game.move_cardinality)
+    # pynet_50 = PytorchNN()
+    # pynet_50.load(net_50, 'agent_150_4')
 
-    net_100 = FFNet(game.state_representation_length, game.move_cardinality)
-    pynet_100 = PytorchNN()
-    pynet_100.load(net_100, 'agent_100')
+    # net_100 = FFNet(game.state_representation_length, game.move_cardinality)
+    # pynet_100 = PytorchNN()
+    # pynet_100.load(net_100, 'agent_300_4')
 
-    net_150 = FFNet(game.state_representation_length, game.move_cardinality)
-    pynet_150 = PytorchNN()
-    pynet_150.load(net_150, 'agent_150')
+    # net_150 = FFNet(game.state_representation_length, game.move_cardinality)
+    # pynet_150 = PytorchNN()
+    # pynet_150.load(net_150, 'agent_450_4')
 
-    # net_200 = ConvNet(hex.state_representation_length, hex.move_cardinality)
+    # net_200 = FFNet(game.state_representation_length, game.move_cardinality)
     # pynet_200 = PytorchNN()
-    # pynet_200.load(net_200, 'agent_200')
+    # pynet_200.load(net_200, 'agent_600_4')
 
     # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
     # pynet_100 = PytorchNN()
     # pynet_100.load(net_1, 'agent_100')
 
-    # tourney = TournamentPlayer(Hex(3), [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ][::-1], 30, True)
+    # tourney = TournamentPlayer(game, [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ][::-1], 30, True)
 
-    gs = game.get_initial_position()
-    print(pynet_50.predict(gs.get_int_list_representation()))
-    # print(pynet_100.predict(gs.get_int_list_representation()))
-    # print(pynet_150.predict(gs.get_int_list_representation()))
-    # print(pynet_200.predict(gs.get_int_list_representation()))
-
-    tourney = TournamentPlayer(game, [NeuralAgent(pynet_50, '500'),NeuralAgent(pynet_100, '1000'),NeuralAgent(pynet_150, '1500'), RandomHexAgent('RAND')], 50, True)
-
-    # tourney = TournamentPlayer(Hex(3), [NeuralAgent(pynet_1, '1'), RandomHexAgent('random'),], 100, True)
-
-
-    # tourney = TournamentPlayer(Hex(4), [MCTSHexAgent("MCTS", 1000, 4), RandomHexAgent('random')][::-1], 100, True)
-    scores, wins = tourney.play_tournament()
-    print(wins)
+    # scores, wins = tourney.play_tournament()
+    # print(wins)
