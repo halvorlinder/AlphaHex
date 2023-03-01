@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 import math
 import torch.utils.data as data_utils
+import wandb
 
 from neural_net import NeuralNet
 from representations import StateRepresentation
@@ -26,7 +27,7 @@ class PytorchNN(NeuralNet):
         examples = data_utils.TensorDataset(x, y)
         trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
         # print(np.array(examples))
-        trainer.train(examples)
+        return trainer.train(examples)
 
     # def train(self, examples : np.ndarray):
     #     trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
@@ -36,7 +37,7 @@ class PytorchNN(NeuralNet):
         # print(data)
         # print(np.array([data], dtype=float))
         output : torch.Tensor = self.model.forward(torch.tensor(np.array([data], dtype=float)).to(torch.float32))
-        return torch.nn.functional.softmax(output).detach().numpy().flatten()
+        return torch.nn.functional.softmax(output, dim=1).detach().numpy().flatten()
 
     def save(self, filename: str):
         torch.save(self.model.state_dict(), filename)
@@ -84,7 +85,7 @@ class FFNet(nn.Module):
         if not filename:
             self.fc1 = nn.Linear(board_state_length, 20)
             self.fc2 = nn.Linear(20, 20)
-            # self.fc3 = nn.Linear(100, 20)
+            self.fc3 = nn.Linear(20, 20)
             self.fc4 = nn.Linear(20, move_cardinality)
         else: 
             self.load_state_dict(torch.load(filename))
@@ -93,9 +94,9 @@ class FFNet(nn.Module):
         # x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        #x = F.relu(self.fc3(x))
-        x = self.fc4(x)
-        return x
+        x = F.relu(self.fc3(x))
+        logits = self.fc4(x)
+        return logits
     
 
 class Trainer():
@@ -153,20 +154,23 @@ class Trainer():
 
     def train(self, tensor_dataset: data_utils.TensorDataset):
         #torch_dataset = torch.TensorDataset(training_set_tensor)
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.learning_rate)
+        # optimizer = torch.optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=0.9)
         training_loader = torch.utils.data.DataLoader(tensor_dataset, batch_size=self.batch_size, shuffle=True, num_workers=0)
-
+        total_loss_over_epochs = 0
         for epoch in range(self.num_epochs):
             print(f"Training epoch {epoch+1}")
 
             self.model.train(True)
 
             avg_loss = self.train_one_epoch(optimizer=optimizer, training_loader=training_loader, epoch=epoch)
-            
+            total_loss_over_epochs += avg_loss
             print("Loss: ", avg_loss)
+
 
             #model_path = 'model_{}_{}'.format("fake", epoch)
             #self.model.save(model_path)
+        return total_loss_over_epochs / self.num_epochs
 
 
 
