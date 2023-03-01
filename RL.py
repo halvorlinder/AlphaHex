@@ -11,6 +11,7 @@ from neural_net import NeuralNet
 from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
 import multiprocessing as mp
+import wandb
 
 import CONSTANTS
 
@@ -48,14 +49,17 @@ class RL:
                 labels = np.concatenate([labels for (_, labels) in examples])
                 print(inputs)
                 print(labels)
-                self.model.train(inputs, labels)
+                avg_epoch_loss = self.model.train(inputs, labels)
+                wandb.log({'loss': avg_epoch_loss})
+
         else:
             for n in range(num_games):
                 print(n)
                 inputs, labels = self.play_game()
                 print(inputs)
                 print(labels)
-                self.model.train(inputs, labels)
+                avg_epoch_loss = self.model.train(inputs, labels)
+                wandb.log({'loss': avg_epoch_loss})
 
     def play_game(self) -> np.ndarray:
         # TODO not quite sure of the numpy code here
@@ -114,7 +118,9 @@ class NeuralAgent(Agent):
 if __name__ == "__main__":
     from hex import Hex
     from connect2 import Connect2
-    hex = Hex(4)
+
+    wandb.init(project="RL-hex")
+    hex = Hex(3)
     connect2 = Connect2()
     game = hex
     # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
@@ -136,7 +142,8 @@ if __name__ == "__main__":
         epsilon=CONSTANTS.GAME_MOVE_EPSILON
     )
     
-    # rl.train_agent(100)
+    rl.train_agent(1000)
+    rl.model.save("3_agent_100_deep")
     # rl.model.save('agent_50_4')
     # rl.train_agent(100)
     # rl.model.save('agent_100_4')
@@ -177,11 +184,11 @@ if __name__ == "__main__":
     # pynet_200 = PytorchNN()
     # pynet_200.load(net_200, 'agent_600_4')
 
-    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_100 = PytorchNN()
-    # pynet_100.load(net_1, 'agent_100')
+    net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
+    pynet_100 = PytorchNN()
+    pynet_100.load(net_1, '3_agent_1000_deep')
 
-    # tourney = TournamentPlayer(game, [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ][::-1], 30, True)
+    tourney = TournamentPlayer(game, [RandomHexAgent('random'), NeuralAgent(pynet_100, '100'),][::1], 100, True)
 
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
+    scores, wins = tourney.play_tournament()
+    print(wins)
