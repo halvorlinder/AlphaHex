@@ -28,13 +28,15 @@ class TournamentPlayer:
                 agents = list(map(lambda enum_agent: enum_agent[1], enum_agents))
                 indices = list(map(lambda enum_agent: enum_agent[0], enum_agents))
                 game_inst = GameInstance(self.game, agents, self.display)
-                winner = indices[game_inst.start()]
-                losers = set(indices)
-                losers.remove(winner)
-                losers = sorted(list(losers))
-                score_index = tuple([ winner ] + losers)
-                self.scores[score_index]+=1
-                self.agents_wins[winner]+=1
+                scores = game_inst.start()
+                for i, score in enumerate(scores):
+                    current = indices[i]
+                    other = set(indices) 
+                    other.remove(current)
+                    other = sorted(list(other))
+                    score_index = tuple([ current ] + other)
+                    self.scores[score_index]+=score
+                    self.agents_wins[current]+=score
                 if self.display:
                     self.plot_matchup(indices)
                     os.system('clear')

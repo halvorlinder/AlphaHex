@@ -86,7 +86,7 @@ class Connect2Gamestate(Gamestate):
     def reward(self) -> int:
         for i in range(3):
             if self.board_state[i] == self.board_state[i+1] != 0:
-                return self.board_state[i]
+                return [1,0] if self.board_state[i] == 1 else [0,1]
                 
 
         full = True
@@ -95,7 +95,7 @@ class Connect2Gamestate(Gamestate):
                 full = False
         
         if full:
-            return 0
+            return [0.5,0.5]
 
         return None
     

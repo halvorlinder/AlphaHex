@@ -1,4 +1,5 @@
 from functools import partial
+import itertools
 import numpy as np
 import random
 from game import Game, Gamestate, Move
@@ -8,6 +9,7 @@ from torch import float32, float16, float64
 
 from representations import StateRepresentation
 import CONSTANTS
+from tic_tac_toe import TicTacToeGame
 
 DEBUG = False
 
@@ -71,7 +73,6 @@ class MCTS():
         if root:
             self.initial_gamestate = root.gamestate
             self.current_gamestate = root.gamestate
-            # TODO is this okay? yes probably
             self.root = root
         else:
             self.initial_gamestate = game.get_initial_position()
@@ -94,7 +95,7 @@ class MCTS():
 
         self.current_gamestate = self.initial_gamestate
         node = self.root
-        search_path = [node]
+        search_path = []
 
         # using tree policy to find leaf node
         if DEBUG:
@@ -170,17 +171,19 @@ class MCTS():
             print(f'Incrementing values')
         self.increment_reward(search_path=search_path, reward=reward)
 
-    def increment_reward(self, search_path : list[Node], reward: int):
+    def increment_reward(self, search_path : list[Node], reward: list[int]):
         player_in_root = self.initial_gamestate.get_agent_index()
-        offset = 1 if ( player_in_root == 0 and reward == 1 ) or (player_in_root == 1 and reward == -1) else 0
         if DEBUG:
-            print(f'Offset: {offset}')
             print(f'Player: {player_in_root}')
             print(f'Reward: {reward}')
+
         for node in search_path:
             node.visits += 1
-        for node in search_path[offset::2]:
-            node.value += 1
+        self.root.visits+=1
+        
+        offset_reward = reward[player_in_root:] + reward[:player_in_root]
+        for node, rew in zip(search_path, itertools.cycle(offset_reward)):
+            node.value += rew
 
     def run_simulations(self, n: int) -> np.ndarray:
         for _ in range(n):
@@ -207,12 +210,7 @@ class MCTS():
 
 
 if __name__ == "__main__":
-    game = Hex(4)
-    gs = game.get_initial_position()
-    mcts = MCTS(game, score_func=UCB)
-    for i in range(1):
-        mcts.run_simulation()
-
-    print("Best place to start:")
-    for _, child in mcts.root.children.items():
-        print(child.value)
+    game = Hex(3)
+    mcts = MCTS(game)
+    for _ in range(10):
+        print(mcts.run_simulations(1000))
