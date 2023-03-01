@@ -1,10 +1,5 @@
 from agent import Agent
-from connect2 import Connect2
-from connect2agents import HumanConnect2Agent
 from game import Game
-from hex import Hex
-from hex_agents import MCTSAgent, MCTSHexAgent
-from tic_tac_toe import TicTacToeGame
 
 
 class GameInstance:
@@ -28,6 +23,11 @@ class GameInstance:
         return gamestate.reward()
     
 if __name__ == '__main__':
+    from gen_agents import HumanAgent, MCTSAgent, RandomAgent
+    from hex import Hex
+    from tic_tac_toe import TicTacToeGame
+    from connect2 import Connect2
+
     game = Connect2()
-    game = GameInstance(game, [MCTSAgent(game, 'Bot', 200), HumanConnect2Agent()][::-1], True)
+    game = GameInstance(game, [MCTSAgent(game, 'Bot', 200), HumanAgent()][::-1], True)
     game.start()

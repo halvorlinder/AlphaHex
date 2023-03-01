@@ -9,9 +9,3 @@ class Agent(ABC):
     @abstractmethod
     def get_next_move(self, gamestate : Gamestate) -> int:
         pass
-
-class GeneralAgent(Agent):
-    pass
-
-class SpecializedAgent(Agent):
-    pass

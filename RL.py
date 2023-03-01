@@ -1,12 +1,10 @@
 from __future__ import annotations
 from agent import Agent
-from connect2agents import HumanConnect2Agent
 from game import Game, Gamestate
 from ANET import ConvNet, FFNet, PytorchNN, Trainer
-import random
 import numpy as np
 from MCTS import MCTS, UCB
-from hex_agents import RandomHexAgent, RandomConnect2Agent, MCTSHexAgent
+from game_player import GameInstance
 from neural_net import NeuralNet
 from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
@@ -48,6 +46,8 @@ class RL:
                 labels = np.concatenate([labels for (_, labels) in examples])
                 print(inputs)
                 print(labels)
+                for inp in inputs:
+                    print(self.model.predict(inp))
                 self.model.train(inputs, labels)
         else:
             for n in range(num_games):
@@ -103,7 +103,7 @@ class NeuralAgent(Agent):
 
     def get_next_move(self, gamestate: Gamestate) -> int:
         prediction = self.neural_net.predict(gamestate.get_representation(self.neural_net.model.state_representation))
-        # print(prediction)
+        print(prediction)
         # print(filter_and_normalize(prediction, gamestate.get_legal_moves()))
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
         move = np.random.choice([n for n in range(len(probs))], p=probs)
@@ -112,18 +112,16 @@ class NeuralAgent(Agent):
         return move
 
 if __name__ == "__main__":
+    from gen_agents import HumanAgent, RandomAgent, MCTSAgent
+    from tic_tac_toe import TicTacToeGame
     from hex import Hex
     from connect2 import Connect2
-    hex = Hex(4)
-    connect2 = Connect2()
-    game = hex
-    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_1 = PytorchNN()
-    # pynet_1.load(net_1, 'agent_49')
-    # rl = RL(hex, pynet_1)
 
-    # mcts = MCTS(game)
-    # print(mcts.run_simulations(1000))
+    hex = Hex(3)
+    connect2 = Connect2()
+    tic = TicTacToeGame()
+
+    game = hex
 
     rl = RL(
         game, 
@@ -136,14 +134,14 @@ if __name__ == "__main__":
         epsilon=CONSTANTS.GAME_MOVE_EPSILON
     )
     
-    # rl.train_agent(100)
-    # rl.model.save('agent_50_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_100_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_150_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_200_4')
+    rl.train_agent(50)
+    rl.model.save('agent_50_4')
+    rl.train_agent(50)
+    rl.model.save('agent_100_4')
+    rl.train_agent(50)
+    rl.model.save('agent_150_4')
+    rl.train_agent(50)
+    rl.model.save('agent_200_4')
     # rl.train_agent(100)
     # rl.model.save('agent_250_4')
     # rl.train_agent(100)
@@ -167,21 +165,20 @@ if __name__ == "__main__":
 
     # net_100 = FFNet(game.state_representation_length, game.move_cardinality)
     # pynet_100 = PytorchNN()
-    # pynet_100.load(net_100, 'agent_300_4')
+    # pynet_100.load(net_100, 'agent_100_4')
 
     # net_150 = FFNet(game.state_representation_length, game.move_cardinality)
     # pynet_150 = PytorchNN()
-    # pynet_150.load(net_150, 'agent_450_4')
+    # pynet_150.load(net_150, 'agent_150_4')
 
     # net_200 = FFNet(game.state_representation_length, game.move_cardinality)
     # pynet_200 = PytorchNN()
-    # pynet_200.load(net_200, 'agent_600_4')
+    # pynet_200.load(net_200, 'agent_200_4')
 
-    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_100 = PytorchNN()
-    # pynet_100.load(net_1, 'agent_100')
+    game_inst = GameInstance(game, [HumanAgent(), NeuralAgent(pynet_50, '50')][::-1], True)
+    game_inst.start()
 
-    # tourney = TournamentPlayer(game, [RandomHexAgent('random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_100, '100'), NeuralAgent(pynet_150, '150'), NeuralAgent(pynet_200, '200') ][::-1], 30, True)
+    # tourney = TournamentPlayer(game, [HumanConnect2Agent(), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_200, '200') ][::-1], 10, True)
 
     # scores, wins = tourney.play_tournament()
     # print(wins)

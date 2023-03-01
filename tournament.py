@@ -7,9 +7,7 @@ import os
 from agent import Agent
 from game import Game
 from game_player import GameInstance
-from hex import Hex
-from hex_agents import RandomHexAgent
-from dummy_multiplayer_game import DummyMultiAgent, DummyMultiAgentGame
+from gen_agents import RandomAgent
 
 
 class TournamentPlayer:
@@ -66,10 +64,9 @@ class TournamentPlayer:
 
     
 if __name__ == '__main__':
-    tourney = TournamentPlayer(Hex(6), [RandomHexAgent('1'), RandomHexAgent('2'), RandomHexAgent('3'), RandomHexAgent('4')], 10, True)
+    from hex import Hex
+    from dummy_multiplayer_game import DummyMultiAgent, DummyMultiAgentGame
+    game = hex(3)
+    tourney = TournamentPlayer(game, [RandomAgent(game, '1'),RandomAgent(game, '2'),RandomAgent(game, '3'),RandomAgent(game, '4')], 10, True)
     scores, wins = tourney.play_tournament()
     print(wins)
-
-    # tourney = TournamentPlayer(DummyMultiAgentGame(3), [DummyMultiAgent('1'), DummyMultiAgent('2'), DummyMultiAgent('3'), DummyMultiAgent('4'), DummyMultiAgent('5')], 10, True)
-    # scores = tourney.play_tournament()
-    # print(scores)
