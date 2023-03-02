@@ -36,7 +36,8 @@ class PytorchNN(NeuralNet):
         # print(data)
         # print(np.array([data], dtype=float))
         output : torch.Tensor = self.model.forward(torch.tensor(np.array([data], dtype=float)).to(torch.float32))
-        return torch.nn.functional.softmax(output).detach().numpy().flatten()
+        return torch.nn.functional.softmax(output, dim=1).detach().numpy().flatten()
+        # return output.detach().numpy().flatten()
 
     def save(self, filename: str):
         torch.save(self.model.state_dict(), filename)
@@ -82,19 +83,24 @@ class FFNet(nn.Module):
         super().__init__()
         self.state_representation = StateRepresentation.FLAT
         if not filename:
-            self.fc1 = nn.Linear(board_state_length, 20)
-            self.fc2 = nn.Linear(20, 20)
-            # self.fc3 = nn.Linear(100, 20)
-            self.fc4 = nn.Linear(20, move_cardinality)
+            self.fc1 = nn.Linear(board_state_length, 100)
+            # self.fc2 = nn.Linear(20, 20)
+            # self.fc2 = nn.Linear(100, 100)
+            # self.fc3 = nn.Linear(100, 100)
+            self.fc4 = nn.Linear(100, 100)
+            # self.fc4 = nn.Linear(20, 20)
+            self.fc5 = nn.Linear(100, move_cardinality)
         else: 
             self.load_state_dict(torch.load(filename))
 
     def forward(self, x):
         # x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        #x = F.relu(self.fc3(x))
-        x = self.fc4(x)
+        # x = F.relu(self.fc2(x))
+        # x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = self.fc5(x)
+        # x = F.softmax((x), dim=1)
         return x
     
 
