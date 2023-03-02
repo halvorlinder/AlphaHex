@@ -83,8 +83,9 @@ class MCTS():
             print(f'With {self.root.visits} previous visits')
             print()
         self.score_func = score_func
-        self.predict_func = predict_func if predict_func else partial(
-            dummy_predict, game.move_cardinality)
+        self.predict_func, self.epsilon = (predict_func, CONSTANTS.MCTS_EPSILON) if predict_func else (partial(
+            dummy_predict, game.move_cardinality), 1)
+        
 
     def normalize_action_probs(self, action_probs, gamestate: Gamestate):
         norm_action_probs = np.array([prob * mask for prob,
@@ -99,6 +100,10 @@ class MCTS():
 
         # using tree policy to find leaf node
         if DEBUG:
+            print(f'Root:')
+            for action, nd in node.children.items():
+                score = self.score_func(parent=node, child=nd)
+                print(f'\t\tAction: {action}\tUCB: {score}, Visits: {nd.visits}, Value: {nd.value}')
             print(f'Starting tree search:')
         while (len(node.children) > 0):  # node has children, already expanded
             node = node.select_child(self.score_func)
@@ -147,7 +152,7 @@ class MCTS():
             # select next move in rollout phase
             choose_random = random.random()
             move = None
-            if choose_random < CONSTANTS.MCTS_EPSILON:
+            if choose_random < self.epsilon:
                 if DEBUG: 
                     print(f'\tEpsilon choice')
                 true_idx = np.argwhere(
@@ -210,7 +215,8 @@ class MCTS():
 
 
 if __name__ == "__main__":
-    game = Hex(3)
-    mcts = MCTS(game)
-    for _ in range(10):
+    game = TicTacToeGame()
+    gs = game.from_int_list_representation([0,2,1,1,2,2,0,1,1])
+    mcts = MCTS(game, root=Node(gs))
+    for _ in range(1):
         print(mcts.run_simulations(1000))
