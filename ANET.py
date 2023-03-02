@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 import math
 import torch.utils.data as data_utils
+from functools import reduce
 
 from neural_net import NeuralNet
 from representations import StateRepresentation
@@ -83,25 +84,12 @@ class FFNet(nn.Module):
         super().__init__()
         self.state_representation = StateRepresentation.FLAT
         if not filename:
-            self.fc1 = nn.Linear(board_state_length, 100)
-            # self.fc2 = nn.Linear(20, 20)
-            # self.fc2 = nn.Linear(100, 100)
-            # self.fc3 = nn.Linear(100, 100)
-            self.fc4 = nn.Linear(100, 100)
-            # self.fc4 = nn.Linear(20, 20)
-            self.fc5 = nn.Linear(100, move_cardinality)
+            self.layers = nn.ModuleList([nn.Linear(inp, out) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS, CONSTANTS.LAYERS+[move_cardinality])])
         else: 
             self.load_state_dict(torch.load(filename))
 
     def forward(self, x):
-        # x = torch.flatten(x, 1)
-        x = F.relu(self.fc1(x))
-        # x = F.relu(self.fc2(x))
-        # x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
-        x = self.fc5(x)
-        # x = F.softmax((x), dim=1)
-        return x
+        return reduce(lambda x, f: F.relu(f(x)), self.layers, x )
     
 
 class Trainer():
