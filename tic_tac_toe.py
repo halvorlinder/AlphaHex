@@ -31,7 +31,10 @@ class TicTacToeGame(Game):
         return TicTacToeState()
 
     def from_int_list_representation(self, list_rep: list[int]) -> TicTacToeState:
-        raise NotImplementedError()
+        gs = TicTacToeState()
+        gs.board = [list_rep[0:3],list_rep[3:6],list_rep[6:9]]
+        gs.turn = sum([1 if p>0 else 0 for p in list_rep])%2
+        return gs
 
 
 class TicTacToeState(Gamestate):
@@ -69,7 +72,7 @@ class TicTacToeState(Gamestate):
                     reward[p] = 1
                     return reward
         if self.full():
-            reward = [0.5,0,5]
+            reward = [0.5, 0.5]
             return reward 
         return None
         
@@ -90,7 +93,7 @@ class TicTacToeState(Gamestate):
                 return np.array(list(map(lambda p: 1 if p==self.turn+1 else 0 if p==0 else -1, itertools.chain(*self.board))))
 
     def __str__(self) -> str:
-        return '\n'.join([''.join(map(str, row)) for row in self.board])
+        return '\n'.join([''.join(map(str, row)) for row in self.board])+"\n"
 
 class TicTacToeMove(Move):
 
