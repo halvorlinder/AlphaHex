@@ -75,7 +75,7 @@ class RL:
             # print(gamestate.get_legal_moves())
 
             selected_move = epsilon_greedy_choise(
-                action_probs, gamestate.get_legal_moves(), epsilon=self.epsilon)
+                action_probs, gamestate.get_legal_moves(), epsilon=CONSTANTS.GAME_MOVE_EPSILON)
             training_states.append(gamestate.get_representation(self.model.model.state_representation))
             training_states_full.append(gamestate)
             training_probs.append(action_probs)
@@ -104,11 +104,12 @@ class NeuralAgent(Agent):
     def get_next_move(self, gamestate: Gamestate) -> int:
         prediction = self.neural_net.predict(gamestate.get_representation(self.neural_net.model.state_representation))
         print(prediction)
-        # print(filter_and_normalize(prediction, gamestate.get_legal_moves()))
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
-        move = np.random.choice([n for n in range(len(probs))], p=probs)
-        # move = epsilon_greedy_choise(filter_and_normalize(prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
-        # print(move)
+        match CONSTANTS.AGENT_SELECTION_POLICY:
+            case CONSTANTS.SelectionPolicy.MAX:
+                move = np.random.choice([n for n in range(len(probs))], p=probs)
+            case CONSTANTS.SelectionPolicy.SAMPLE:
+                move = epsilon_greedy_choise(filter_and_normalize(prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
         return move
 
 if __name__ == "__main__":
@@ -134,14 +135,14 @@ if __name__ == "__main__":
         epsilon=CONSTANTS.GAME_MOVE_EPSILON
     )
     
-    rl.train_agent(50)
-    rl.model.save('agent_50_4')
-    rl.train_agent(50)
-    rl.model.save('agent_100_4')
-    rl.train_agent(50)
-    rl.model.save('agent_150_4')
-    rl.train_agent(50)
-    rl.model.save('agent_200_4')
+    # rl.train_agent(500)
+    # rl.model.save('agent_50_3')
+    # rl.train_agent(500)
+    # rl.model.save('agent_100_3')
+    # rl.train_agent(500)
+    # rl.model.save('agent_150_3')
+    # rl.train_agent(500)
+    # rl.model.save('agent_200_3')
     # rl.train_agent(100)
     # rl.model.save('agent_250_4')
     # rl.train_agent(100)
@@ -159,26 +160,26 @@ if __name__ == "__main__":
     # rl.train_agent(100)
     # rl.model.save('agent_600_4')
 
-    # net_50 = FFNet(game.state_representation_length, game.move_cardinality)
-    # pynet_50 = PytorchNN()
-    # pynet_50.load(net_50, 'agent_150_4')
+    net_50 = FFNet(game.state_representation_length, game.move_cardinality)
+    pynet_50 = PytorchNN()
+    pynet_50.load(net_50, 'agent_50_4')
 
-    # net_100 = FFNet(game.state_representation_length, game.move_cardinality)
-    # pynet_100 = PytorchNN()
-    # pynet_100.load(net_100, 'agent_100_4')
+    net_100 = FFNet(game.state_representation_length, game.move_cardinality)
+    pynet_100 = PytorchNN()
+    pynet_100.load(net_100, 'agent_100_4')
 
-    # net_150 = FFNet(game.state_representation_length, game.move_cardinality)
-    # pynet_150 = PytorchNN()
-    # pynet_150.load(net_150, 'agent_150_4')
+    net_150 = FFNet(game.state_representation_length, game.move_cardinality)
+    pynet_150 = PytorchNN()
+    pynet_150.load(net_150, 'agent_150_4')
 
-    # net_200 = FFNet(game.state_representation_length, game.move_cardinality)
-    # pynet_200 = PytorchNN()
-    # pynet_200.load(net_200, 'agent_200_4')
+    net_200 = FFNet(game.state_representation_length, game.move_cardinality)
+    pynet_200 = PytorchNN()
+    pynet_200.load(net_200, 'agent_200_4')
 
-    game_inst = GameInstance(game, [HumanAgent(), NeuralAgent(pynet_50, '50')][::-1], True)
-    game_inst.start()
+    # game_inst = GameInstance(game, [HumanAgent(), NeuralAgent(pynet_50, '50')][::-1], True)
+    # game_inst.start()
 
-    # tourney = TournamentPlayer(game, [HumanConnect2Agent(), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_200, '200') ][::-1], 10, True)
+    tourney = TournamentPlayer(game, [RandomAgent(game, 'random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_200, '200') ][::-1], 100, True)
 
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
+    scores, wins = tourney.play_tournament()
+    print(wins)
