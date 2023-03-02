@@ -9,6 +9,7 @@ from neural_net import NeuralNet
 from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
 import multiprocessing as mp
+import wandb
 
 import CONSTANTS
 
@@ -49,13 +50,17 @@ class RL:
                 for inp in inputs:
                     print(self.model.predict(inp))
                 self.model.train(inputs, labels)
+                avg_epoch_loss = self.model.train(inputs, labels)
+                wandb.log({'loss': avg_epoch_loss})
+
         else:
             for n in range(num_games):
                 print(n)
                 inputs, labels = self.play_game()
                 print(inputs)
                 print(labels)
-                self.model.train(inputs, labels)
+                avg_epoch_loss = self.model.train(inputs, labels)
+                wandb.log({'loss': avg_epoch_loss})
 
     def play_game(self) -> np.ndarray:
         # TODO not quite sure of the numpy code here
@@ -117,6 +122,15 @@ if __name__ == "__main__":
     from tic_tac_toe import TicTacToeGame
     from hex import Hex
     from connect2 import Connect2
+
+    wandb.init(project="RL-hex")
+    hex = Hex(3)
+    connect2 = Connect2()
+    game = hex
+    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
+    # pynet_1 = PytorchNN()
+    # pynet_1.load(net_1, 'agent_49')
+    # rl = RL(hex, pynet_1)
 
     hex = Hex(3)
     connect2 = Connect2()
