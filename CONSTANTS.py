@@ -8,6 +8,11 @@ class SelectionPolicy(Enum):
     SAMPLE = auto()
     MAX = auto()
 
+class TrainingGame(Enum):
+    HEX = auto()
+    C2 = auto()
+    TTT = auto()
+
 
 # 0: no debugging
 # 1: light debugging
@@ -42,3 +47,12 @@ CORES = 4
 
 # Agent behaviour
 AGENT_SELECTION_POLICY = SelectionPolicy.MAX
+
+# Agent training 
+GAMES_PER_SAVE = 10
+NUM_SAVES = 3
+
+GAME = TrainingGame.HEX
+
+# Hex
+HEX_SIZE = 3

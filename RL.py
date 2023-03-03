@@ -1,4 +1,10 @@
 from __future__ import annotations
+from datetime import datetime
+import json
+import os
+from connect2 import Connect2
+from hex import Hex
+from tic_tac_toe import TicTacToeGame
 from agent import Agent
 from game import Game, Gamestate
 from ANET import ConvNet, FFNet, PytorchNN, Trainer
@@ -8,6 +14,7 @@ from game_player import GameInstance
 from neural_net import NeuralNet
 from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
+import time
 import multiprocessing as mp
 import wandb
 
@@ -42,7 +49,8 @@ class RL:
         if CONSTANTS.M_THREAD:
             for n in range(num_games//CONSTANTS.CORES):
                 print(n*CONSTANTS.CORES)
-                examples = list(mp.Pool(CONSTANTS.CORES).map(RL.play_game, [self]*CONSTANTS.CORES))
+                examples = list(mp.Pool(CONSTANTS.CORES).map(
+                    RL.play_game, [self]*CONSTANTS.CORES))
                 inputs = np.concatenate([inputs for (inputs, _) in examples])
                 labels = np.concatenate([labels for (_, labels) in examples])
                 print(inputs)
@@ -70,7 +78,7 @@ class RL:
         training_visits = []
         training_states_full = []
         next_root = None
-        while gamestate.reward()==None:
+        while gamestate.reward() == None:
             print(gamestate)
             mcts = MCTS(self.game, root=next_root,
                         predict_func=self.model.predict, representation=self.model.model.state_representation)
@@ -81,7 +89,8 @@ class RL:
 
             selected_move = epsilon_greedy_choise(
                 action_probs, gamestate.get_legal_moves(), epsilon=CONSTANTS.GAME_MOVE_EPSILON)
-            training_states.append(gamestate.get_representation(self.model.model.state_representation))
+            training_states.append(gamestate.get_representation(
+                self.model.model.state_representation))
             training_states_full.append(gamestate)
             training_probs.append(action_probs)
             training_visits.append(mcts.get_visits())
@@ -107,93 +116,89 @@ class NeuralAgent(Agent):
             self.name = name
 
     def get_next_move(self, gamestate: Gamestate) -> int:
-        prediction = self.neural_net.predict(gamestate.get_representation(self.neural_net.model.state_representation))
+        prediction = self.neural_net.predict(gamestate.get_representation(
+            self.neural_net.model.state_representation))
         print(prediction)
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
         match CONSTANTS.AGENT_SELECTION_POLICY:
             case CONSTANTS.SelectionPolicy.MAX:
-                move = np.random.choice([n for n in range(len(probs))], p=probs)
+                move = np.random.choice(
+                    [n for n in range(len(probs))], p=probs)
             case CONSTANTS.SelectionPolicy.SAMPLE:
-                move = epsilon_greedy_choise(filter_and_normalize(prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
+                move = epsilon_greedy_choise(filter_and_normalize(
+                    prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
         return move
 
-if __name__ == "__main__":
-    from gen_agents import HumanAgent, RandomAgent, MCTSAgent
-    from tic_tac_toe import TicTacToeGame
-    from hex import Hex
-    from connect2 import Connect2
+def get_agent_folder() -> str:
+    match CONSTANTS.GAME:
+        case CONSTANTS.TrainingGame.HEX:
+            return f'agents/hex{CONSTANTS.HEX_SIZE}/'
+        case CONSTANTS.TrainingGame.C2:
+            return f'agents/c2/'
+        case CONSTANTS.TrainingGame.TTT:
+            return f'agents/ttt/'
 
-    wandb.init(project="RL-hex")
-    hex = Hex(3)
-    connect2 = Connect2()
-    game = hex
-    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_1 = PytorchNN()
-    # pynet_1.load(net_1, 'agent_49')
-    # rl = RL(hex, pynet_1)
+def train_from_conf() -> None:
 
-    hex = Hex(3)
-    connect2 = Connect2()
-    tic = TicTacToeGame()
+    match CONSTANTS.GAME:
+        case CONSTANTS.TrainingGame.HEX:
+            game = Hex(CONSTANTS.HEX_SIZE)
+        case CONSTANTS.TrainingGame.TTT:
+            game = TicTacToeGame()
+        case CONSTANTS.TrainingGame.C2:
+            game = Connect2()
 
-    game = hex
+    match CONSTANTS.NETWORK_ARCHITECTURE:
+        case CONSTANTS.NetworkArchitecture.FF:
+            net = FFNet(
+                game.state_representation_length,
+                game.move_cardinality
+            )
+        case CONSTANTS.NetworkArchitecture.CONV:
+            raise NotImplementedError()
 
     rl = RL(
-        game, 
-        PytorchNN(
-            model=FFNet(
-            game.state_representation_length, 
-            game.move_cardinality
-            )
-        ),
+        game,
+        PytorchNN(model=net),
         epsilon=CONSTANTS.GAME_MOVE_EPSILON
     )
+    t = datetime.now()
+    time_stamp = f'{t.date()}_{t.hour}:{t.minute}'.replace(" " , "_")
     
-    # rl.train_agent(500)
-    # rl.model.save('agent_50_3')
-    # rl.train_agent(500)
-    # rl.model.save('agent_100_3')
-    # rl.train_agent(500)
-    # rl.model.save('agent_150_3')
-    # rl.train_agent(500)
-    # rl.model.save('agent_200_3')
-    # rl.train_agent(100)
-    # rl.model.save('agent_250_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_300_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_350_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_400_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_450_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_500_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_550_4')
-    # rl.train_agent(100)
-    # rl.model.save('agent_600_4')
+    os.makedirs(f'{get_agent_folder()}/{time_stamp}', exist_ok=True)
+    constants = dict(list(map(lambda kv: (str(kv[0]), str(kv[1])), filter(lambda kv: kv[0].isupper(), CONSTANTS.__dict__.items()))))
+    with open(f'{get_agent_folder()}/{time_stamp}/METADATA.json', "w") as metadata:
+        json.dump(constants, metadata)
+    for i in range(CONSTANTS.NUM_SAVES):
+        rl.train_agent(CONSTANTS.GAMES_PER_SAVE)
+        rl.model.save(f'{get_agent_folder()}/{time_stamp}/{i}')
 
-    net_50 = FFNet(game.state_representation_length, game.move_cardinality)
-    pynet_50 = PytorchNN()
-    pynet_50.load(net_50, 'agent_50_4')
 
-    net_100 = FFNet(game.state_representation_length, game.move_cardinality)
-    pynet_100 = PytorchNN()
-    pynet_100.load(net_100, 'agent_100_4')
+if __name__ == "__main__":
+    wandb.init(project="RL-hex")
+    train_from_conf()
 
-    net_150 = FFNet(game.state_representation_length, game.move_cardinality)
-    pynet_150 = PytorchNN()
-    pynet_150.load(net_150, 'agent_150_4')
+    # net_50 = FFNet(game.state_representation_length, game.move_cardinality)
+    # pynet_50 = PytorchNN()
+    # pynet_50.load(net_50, 'agent_50_4')
 
-    net_200 = FFNet(game.state_representation_length, game.move_cardinality)
-    pynet_200 = PytorchNN()
-    pynet_200.load(net_200, 'agent_200_4')
+    # net_100 = FFNet(game.state_representation_length, game.move_cardinality)
+    # pynet_100 = PytorchNN()
+    # pynet_100.load(net_100, 'agent_100_4')
 
-    # game_inst = GameInstance(game, [HumanAgent(), NeuralAgent(pynet_50, '50')][::-1], True)
-    # game_inst.start()
+    # net_150 = FFNet(game.state_representation_length, game.move_cardinality)
+    # pynet_150 = PytorchNN()
+    # pynet_150.load(net_150, 'agent_150_4')
 
-    tourney = TournamentPlayer(game, [RandomAgent(game, 'random'), NeuralAgent(pynet_50, '50'), NeuralAgent(pynet_200, '200') ][::-1], 100, True)
+    # net_200 = FFNet(game.state_representation_length, game.move_cardinality)
+    # pynet_200 = PytorchNN()
+    # pynet_200.load(net_200, 'agent_200_4')
 
-    scores, wins = tourney.play_tournament()
-    print(wins)
+    # # game_inst = GameInstance(game, [HumanAgent(), NeuralAgent(pynet_50, '50')][::-1], True)
+    # # game_inst.start()
+
+    # tourney = TournamentPlayer(game, [RandomAgent(game, 'random'), NeuralAgent(
+    #     pynet_50, '50'), NeuralAgent(pynet_200, '200')][::-1], 100, True)
+
+    # scores, wins = tourney.play_tournament()
+    # print(wins)
