@@ -10,11 +10,8 @@ from game import Game, Gamestate
 from ANET import ConvNet, FFNet, PytorchNN, Trainer
 import numpy as np
 from MCTS import MCTS, UCB
-from game_player import GameInstance
 from neural_net import NeuralNet
-from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
-import time
 import multiprocessing as mp
 import wandb
 
@@ -173,32 +170,29 @@ def train_from_conf() -> None:
         rl.train_agent(CONSTANTS.GAMES_PER_SAVE)
         rl.model.save(f'{get_agent_folder()}/{time_stamp}/{i}')
 
+def get_neural_agents(game : Game, time_stamp : str, indicies : list[int] = None):
+    with open(f'agents/{game.get_name()}/{time_stamp}/METADATA.json') as json_file:
+        data = json.load(json_file)
+        match data['NETWORK_ARCHITECTURE']:
+            case 'NetworkArchitecture.FF':
+                net_gen = lambda:FFNet(game.state_representation_length, game.move_cardinality)
+            case 'NetworkArchitecture.CONV':
+                raise(NotImplementedError())
+        all_indicies = list(range(int(data['NUM_SAVES'])))
+        games_per_save = int(data['GAMES_PER_SAVE'])
+
+    agents = []
+    for i in all_indicies if not indicies else indicies:
+        net = net_gen()
+        pynet = PytorchNN()
+        pynet.load(net, f'agents/{game.get_name()}/{time_stamp}/{i}')
+        agents.append(NeuralAgent(pynet, f'{games_per_save*(i+1)}'))
+    print(agents)
+    return agents
+
 
 if __name__ == "__main__":
     wandb.init(project="RL-hex")
     train_from_conf()
-
-    # net_50 = FFNet(game.state_representation_length, game.move_cardinality)
-    # pynet_50 = PytorchNN()
-    # pynet_50.load(net_50, 'agent_50_4')
-
-    # net_100 = FFNet(game.state_representation_length, game.move_cardinality)
-    # pynet_100 = PytorchNN()
-    # pynet_100.load(net_100, 'agent_100_4')
-
-    # net_150 = FFNet(game.state_representation_length, game.move_cardinality)
-    # pynet_150 = PytorchNN()
-    # pynet_150.load(net_150, 'agent_150_4')
-
-    # net_200 = FFNet(game.state_representation_length, game.move_cardinality)
-    # pynet_200 = PytorchNN()
-    # pynet_200.load(net_200, 'agent_200_4')
-
-    # # game_inst = GameInstance(game, [HumanAgent(), NeuralAgent(pynet_50, '50')][::-1], True)
-    # # game_inst.start()
-
-    # tourney = TournamentPlayer(game, [RandomAgent(game, 'random'), NeuralAgent(
-    #     pynet_50, '50'), NeuralAgent(pynet_200, '200')][::-1], 100, True)
-
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
+    # game = Hex(3)
+    # get_neural_agents(game, '2023-03-03_9:51',)

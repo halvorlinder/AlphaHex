@@ -9,6 +9,10 @@ class Connect2(Game):
         self.move_cardinality = 4
         self.state_representation_length = 4
 
+    def get_name(self) -> str:
+        return 'c2'
+
+
     def play(self, gamestate : Gamestate, move : Move) -> Gamestate:
         new_gamestate = copy.deepcopy(gamestate)
         new_gamestate.board_state[move.get_int_representation()] = new_gamestate.player_to_play

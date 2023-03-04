@@ -17,6 +17,10 @@ class Game(ABC):
     conv_net_layers: int
 
     @abstractmethod
+    def get_name(self) -> str:
+        pass
+
+    @abstractmethod
     def get_initial_position(self) -> Gamestate:
         pass
 

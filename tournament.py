@@ -3,11 +3,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import comb
 import os
+from RL import get_neural_agents
 
 from agent import Agent
 from game import Game
 from game_player import GameInstance
-from gen_agents import RandomAgent
+from gen_agents import MCTSAgent
+from tic_tac_toe import TicTacToeGame
+import CONSTANTS
 
 
 class TournamentPlayer:
@@ -38,9 +41,11 @@ class TournamentPlayer:
                 if self.display:
                     self.plot_matchup(indices)
                     os.system('clear')
+                print(self.agents_wins)
         if self.display:
             self.plot_wins()
                 
+        print(self.agents_wins)
         return self.scores, self.agents_wins
 
     def plot_matchup(self, players:list[int]) -> None:
@@ -64,9 +69,19 @@ class TournamentPlayer:
 
     
 if __name__ == '__main__':
+    from gen_agents import RandomAgent
     from hex import Hex
-    from dummy_multiplayer_game import DummyMultiAgent, DummyMultiAgentGame
-    game = hex(3)
-    tourney = TournamentPlayer(game, [RandomAgent(game, '1'),RandomAgent(game, '2'),RandomAgent(game, '3'),RandomAgent(game, '4')], 10, True)
+    from tic_tac_toe import TicTacToeGame
+    from connect2 import Connect2
+
+    match CONSTANTS.GAME:
+        case CONSTANTS.TrainingGame.HEX:
+            game = Hex(CONSTANTS.HEX_SIZE)
+        case CONSTANTS.TrainingGame.TTT:
+            game = TicTacToeGame()
+        case CONSTANTS.TrainingGame.C2:
+            game = Connect2()
+
+    tourney = TournamentPlayer(game, get_neural_agents(game, CONSTANTS.NEURAL_AGENT_TIMESTAMP), CONSTANTS.TOURNEY_NUM_GAMES, True)
     scores, wins = tourney.play_tournament()
     print(wins)

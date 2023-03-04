@@ -27,6 +27,9 @@ class TicTacToeGame(Game):
         self.num_agents: int = 2
         self.conv_net_layers: int = 3
 
+    def get_name(self) -> str:
+        return 'ttt'
+
     def get_initial_position(self) -> TicTacToeState:
         return TicTacToeState()
 

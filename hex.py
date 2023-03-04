@@ -66,6 +66,9 @@ class Hex(Game):
         self.state_representation_length = self.move_cardinality
         self.conv_net_layers = 3
 
+    def get_name(self) -> str:
+        return f'hex{self.board_size}'
+
     def get_initial_position(self) -> HexState:
         return HexState(self.board_size)
 
