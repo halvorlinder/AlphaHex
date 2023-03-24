@@ -26,18 +26,11 @@ class PytorchNN(NeuralNet):
         y = torch.tensor(y, dtype=torch.float32)
         examples = data_utils.TensorDataset(x, y)
         trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
-        # print(np.array(examples))
         return trainer.train(examples)
 
-    # def train(self, examples : np.ndarray):
-    #     trainer = Trainer(model=self.model, num_epochs=self.num_epochs, learning_rate=self.learning_rate, batch_size=self.batch_size)
-    #     trainer.train(examples)
-
-    def predict(self, data : np.ndarray) -> np.ndarray:
-        # print(data)
-        # print(np.array([data], dtype=float))
-        output : torch.Tensor = self.model.forward(torch.tensor(np.array([data], dtype=float)).to(torch.float32))
-        return torch.nn.functional.softmax(output, dim=1).detach().numpy().flatten()
+    def predict(self, data : np.ndarray, device = CONSTANTS.DEVICE) -> np.ndarray:
+        output : torch.Tensor = self.model.forward(torch.tensor(np.array([data], dtype=float), dtype=torch.float32, device=device))
+        return torch.nn.functional.softmax(output, dim=1).detach().cpu().numpy().flatten()
 
     def save(self, filename: str):
         torch.save(self.model.state_dict(), filename)
@@ -73,22 +66,75 @@ class ConvNet(nn.Module):
         x = F.relu(self.fc2(x))
         x = F.softmax(self.fc3(x), dim=1)
         return x
+    
+class ConvResNet(nn.Module):
 
+    def __init__(self, board_dimension_depth, channels, num_res_blocks, board_state_length, move_cardinality, device = CONSTANTS.DEVICE) -> None:
+        super().__init__()
 
+        self.device = device
+        self.state_representation = StateRepresentation.LAYERED
+        self.startBlock = nn.Sequential(
+            nn.Conv2d(in_channels=board_dimension_depth, out_channels=channels, kernel_size=3, stride=1, padding=1), 
+            nn.BatchNorm2d(channels), 
+            nn.ReLU()
+        )
+        self.resLayers = nn.ModuleList(
+            [ResBlock(channels=channels) for _ in range(num_res_blocks)]
+        )
+        self.policyHead = nn.Sequential(
+            nn.Conv2d(in_channels=channels, out_channels=32, kernel_size=3, stride=1, padding=1), 
+            nn.BatchNorm2d(32), 
+            nn.ReLU(), 
+            nn.Flatten(), 
+            nn.Linear(in_features=32*board_state_length, out_features=move_cardinality)
+        )
+
+        self.to(device=device)
+
+    def forward(self, x):
+        x = self.startBlock(x)
+        for resBlock in self.resLayers:
+            x = resBlock(x)
+        policy = self.policyHead(x)
+        return policy
+
+class ResBlock(nn.Module):
+
+    def __init__(self, channels, stride = 1) -> None:
+        super().__init__()
+        self.conv1 = nn.Sequential(
+                                nn.Conv2d(channels, channels, kernel_size = 3, stride = 1, padding = 1),
+                                nn.BatchNorm2d(channels),
+                                nn.ReLU())
+        self.conv2 = nn.Sequential(
+                        nn.Conv2d(channels, channels, kernel_size = 3, stride = 1, padding = 1),
+                        nn.BatchNorm2d(channels))
+        self.relu = nn.ReLU()
+        
+    def forward(self, x):
+        residual = x
+        out = self.conv1(x)
+        out = self.conv2(out)
+        out += residual
+        out = self.relu(out)
+        return out
 
 
 class FFNet(nn.Module):
 
-    def __init__(self, board_state_length: int = None, move_cardinality: int = None, filename : str = None) -> None:
+    def __init__(self, board_state_length: int = None, move_cardinality: int = None, filename : str = None, device=CONSTANTS.DEVICE) -> None:
         super().__init__()
         self.state_representation = StateRepresentation.FLAT
         if not filename:
-            self.fc1 = nn.Linear(board_state_length, 20)
-            self.fc2 = nn.Linear(20, 20)
-            self.fc3 = nn.Linear(20, 20)
-            self.fc4 = nn.Linear(20, move_cardinality)
+            self.fc1 = nn.Linear(board_state_length, 100)
+            self.fc2 = nn.Linear(100, 100)
+            self.fc3 = nn.Linear(100, 100)
+            self.fc4 = nn.Linear(100, move_cardinality)
+
+            self.to(device=device)
         else: 
-            self.load_state_dict(torch.load(filename))
+            self.load_state_dict(torch.load(filename), map_location=CONSTANTS.DEVICE)
 
     def forward(self, x):
         # x = torch.flatten(x, 1)
@@ -125,7 +171,7 @@ class Trainer():
 
             optimizer.zero_grad()
 
-            outputs = self.model(inputs)
+            outputs = self.model(inputs.to(CONSTANTS.DEVICE))
 
             if DEBUG_MODE and i == 0:
                 print("INPUT")
@@ -137,7 +183,7 @@ class Trainer():
                 print("LABELS")
                 print(labels)
 
-            loss = self.loss_fn(outputs, labels)
+            loss = self.loss_fn(outputs.to(CONSTANTS.DEVICE), labels.to(CONSTANTS.DEVICE))
             loss.backward()
 
             optimizer.step()
@@ -147,7 +193,7 @@ class Trainer():
             running_loss += loss.item()
             total_loss += loss.item()
             if i % 2000 == 1999:    # print every 2000 mini-batches
-                print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
+                # print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
                 running_loss = 0.0
 
         return total_loss / (i+1)
@@ -159,47 +205,19 @@ class Trainer():
         training_loader = torch.utils.data.DataLoader(tensor_dataset, batch_size=self.batch_size, shuffle=True, num_workers=0)
         total_loss_over_epochs = 0
         for epoch in range(self.num_epochs):
-            print(f"Training epoch {epoch+1}")
-
+            # print(f"Training epoch {epoch+1}")
             self.model.train(True)
-
             avg_loss = self.train_one_epoch(optimizer=optimizer, training_loader=training_loader, epoch=epoch)
             total_loss_over_epochs += avg_loss
-            print("Loss: ", avg_loss)
-
-
-            #model_path = 'model_{}_{}'.format("fake", epoch)
-            #self.model.save(model_path)
+            # print("Loss: ", avg_loss)
         return total_loss_over_epochs / self.num_epochs
 
 
 
 if __name__ == "__main__":
-    # model = ConvNet(25, 3, 25)
-    # from torchsummary import summary
-    # summary(model, (3, 5, 5))
-    import matplotlib.pyplot as plt
-
-    x = np.random.uniform(-5, 5, 1000)
-    x = x.reshape(1000, 1)
-
-    noise = np.random.uniform(-0.1, 0.1, 1000).reshape(1000, 1)
-    y = np.add(np.power(x, 2), noise)
-
-    x = torch.tensor(x, dtype=torch.float32)
-    y = torch.tensor(y, dtype=torch.float32)
-
-    net = FFNet(1, 1)
-
-    trainer = Trainer(net, 4, 0.001, 8)
-
-    train_set = data_utils.TensorDataset(x, y)
-
-    trainer.train(train_set)
-    
-    vals = net(x.clone().detach())
-    vals = vals.detach().numpy().flatten()
-    plt.plot(x, vals, "*", color="red")
-    plt.plot(x, y, "*", color="blue")
-    plt.show()
+    model1 = ConvResNet(3, 32, 10, 16, 16)
+    model2 = FFNet(16, 16)
+    from torchsummary import summary
+    summary(model1, (3, 4, 4))
+    summary(model2, (16,))
     
