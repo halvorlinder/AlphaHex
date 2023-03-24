@@ -23,8 +23,8 @@ DEBUG_LEVEL = 0
 
 # CONSTANTS IN NEURAL NET TRAINER
 NUM_EPOCHS = 1
-LEARNING_RATE = 0.05
-BATCH_SIZE = 32
+LEARNING_RATE = 0.001
+BATCH_SIZE = 16
 DEVICE = "cpu" # "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
 
@@ -32,7 +32,7 @@ DEVICE = "cpu" # "cuda" if torch.cuda.is_available() else "mps" if torch.backend
 NETWORK_ARCHITECTURE = NetworkArchitecture.FF
 
 # FF
-LAYERS = [100, 100, 100]
+LAYERS = [100, 100]
 
 
 # CONSTANTS IN MCTS
@@ -44,21 +44,27 @@ ROLLOUTS = 500
 
 # Multi threading
 M_THREAD = True
-CORES = 4
-
+CORES = 10
 
 # Agent behaviour
 AGENT_SELECTION_POLICY = SelectionPolicy.MAX
 
 # Agent training 
-GAMES_PER_SAVE = 500
+GAMES_PER_SAVE = 250
 NUM_SAVES = 4
 
 GAME = TrainingGame.TTT
+
+# Replay buffer
+REPLAY_BUFFER_MAX_SIZE = 1000
+REPLAY_BUFFER_MOVES_CHOSEN = 10
 
 # Hex
 HEX_SIZE = 3
 
 # TOURNEY 
-NEURAL_AGENT_TIMESTAMP = "2023-03-03_9:51"
+NEURAL_AGENT_TIMESTAMP = "2023-03-24_13:15"
 TOURNEY_NUM_GAMES = 50
+
+# Wandb
+ENABLE_WANDB =False
