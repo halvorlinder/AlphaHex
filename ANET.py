@@ -89,7 +89,7 @@ class FFNet(nn.Module):
             self.load_state_dict(torch.load(filename))
 
     def forward(self, x):
-        return reduce(lambda x, f: F.relu(f(x)), self.layers, x )
+        return self.layers[-1](reduce(lambda x, f: F.relu(f(x)), self.layers[:-1], x ))
     
 
 class Trainer():
