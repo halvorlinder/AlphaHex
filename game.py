@@ -17,6 +17,10 @@ class Game(ABC):
     conv_net_layers: int
 
     @abstractmethod
+    def get_name(self) -> str:
+        pass
+
+    @abstractmethod
     def get_initial_position(self) -> Gamestate:
         pass
 
@@ -47,7 +51,7 @@ class Gamestate(ABC):
         pass
 
     @abstractmethod
-    def reward(self) -> int:
+    def reward(self) -> list[int]:
         pass
 
     @abstractmethod
@@ -71,7 +75,7 @@ class Gamestate(ABC):
 class Move(ABC):
 
     @abstractmethod
-    def get_int_representation(self):
+    def get_int_representation(self) -> int:
         pass
 
     @abstractmethod

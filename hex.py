@@ -66,6 +66,9 @@ class Hex(Game):
         self.state_representation_length = self.move_cardinality
         self.conv_net_layers = 3
 
+    def get_name(self) -> str:
+        return f'hex{self.board_size}'
+
     def get_initial_position(self) -> HexState:
         return HexState(self.board_size)
 
@@ -183,7 +186,7 @@ class HexState(Gamestate):
                    for _ in range(self.board_size)]
         for tile in start:
             if self.dfs(tile, visited, end):
-                return -1 if self.turn == Player.P1 else 1
+                return [0,1] if self.turn == Player.P1 else [1,0]
 
     def dfs(self, tile: HexMove, visited: list[list[bool]], end: Callable[[HexMove], bool]) -> bool:
         if (not self.in_board(tile)) or self.index(tile) != self.turn.next_player() or visited[tile.se_diag][tile.ne_diag]:

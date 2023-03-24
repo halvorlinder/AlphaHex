@@ -9,6 +9,10 @@ class Connect2(Game):
         self.move_cardinality = 4
         self.state_representation_length = 4
 
+    def get_name(self) -> str:
+        return 'c2'
+
+
     def play(self, gamestate : Gamestate, move : Move) -> Gamestate:
         new_gamestate = copy.deepcopy(gamestate)
         new_gamestate.board_state[move.get_int_representation()] = new_gamestate.player_to_play
@@ -86,7 +90,7 @@ class Connect2Gamestate(Gamestate):
     def reward(self) -> int:
         for i in range(3):
             if self.board_state[i] == self.board_state[i+1] != 0:
-                return self.board_state[i]
+                return [1,0] if self.board_state[i] == 1 else [0,1]
                 
 
         full = True
@@ -95,7 +99,7 @@ class Connect2Gamestate(Gamestate):
                 full = False
         
         if full:
-            return 0
+            return [0.5,0.5]
 
         return None
     
