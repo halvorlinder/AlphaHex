@@ -72,13 +72,13 @@ class RL:
                     RL.play_game, [self]*CONSTANTS.CORES))
                 inputs = np.concatenate([inputs for (inputs, _) in examples])
                 labels = np.concatenate([labels for (_, labels) in examples])
-                for inp in inputs:
-                    print(self.model.predict(inp))
+                # for inp in inputs:
+                #     print(self.model.predict(inp))
                 self.add_training_examples(inputs=inputs, labels=labels)
                 chosen_inputs, chosen_labels = self.get_training_examples()
                 avg_epoch_loss = self.model.train(chosen_inputs, chosen_labels)
                 if CONSTANTS.ENABLE_WANDB:
-                    wandb.log({'loss': avg_epoch_loss})
+                    wandb.log({'loss': avg_epoch_loss, "buffer_capacity": self.move_buffer["inputs"].shape[0] / CONSTANTS.REPLAY_BUFFER_MAX_SIZE})
 
         else:
             for n in range(num_games):
@@ -99,7 +99,7 @@ class RL:
         training_states_full = []
         next_root = None
         while gamestate.reward() == None:
-            print(gamestate)
+            # print(gamestate)
             mcts = MCTS(self.game, root=next_root,
                         predict_func=self.model.predict, representation=self.model.model.state_representation)
             action_probs = mcts.run_simulations(CONSTANTS.ROLLOUTS)
