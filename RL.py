@@ -14,6 +14,7 @@ from neural_net import NeuralNet
 from utils import epsilon_greedy_choise, filter_and_normalize
 import multiprocessing as mp
 import wandb
+import random
 
 import CONSTANTS
 
@@ -24,6 +25,7 @@ class RL:
         self.game = game
         self.model: NeuralNet = model
         self.epsilon = epsilon
+        self.move_buffer = {"inputs" : np.array([]), "labels" : np.array([])}
 
     # def get_agent(self) -> NeuralAgent:
     #     return self.agent
@@ -42,6 +44,26 @@ class RL:
         # self.agent = NeuralAgent(FFNet(self.game.state_representation_length, self.game.move_cardinality))
         self.model.load(filename)
 
+    def get_training_examples(self):
+        print(self.move_buffer["inputs"])
+        buffer_length = self.move_buffer["inputs"].shape[0]
+        chosen_indexes = random.sample(range(0, buffer_length), CONSTANTS.REPLAY_BUFFER_MOVES_CHOSEN)
+        chosen_inputs = self.move_buffer["inputs"][chosen_indexes]
+        chosen_labels = self.move_buffer["labels"][chosen_indexes]
+        self.move_buffer["inputs"] = np.delete(self.move_buffer["inputs"], chosen_indexes, axis=0)
+        self.move_buffer["labels"] = np.delete(self.move_buffer["labels"], chosen_indexes, axis=0)
+        return chosen_inputs, chosen_labels
+    
+    def add_training_examples(self, inputs, labels):
+        self.move_buffer["inputs"] = np.concatenate((self.move_buffer["inputs"], inputs)) if self.move_buffer["inputs"].size > 0 else inputs
+        self.move_buffer["labels"] = np.concatenate((self.move_buffer["labels"], labels)) if self.move_buffer["labels"].size > 0 else labels
+        buffer_length = self.move_buffer["inputs"].shape[0]
+        if buffer_length > CONSTANTS.REPLAY_BUFFER_MAX_SIZE:
+            print("BUFFER TOO LARGE, DELETING OLD EXAMPLES")
+            self.move_buffer["inputs"] = self.move_buffer["inputs"][:CONSTANTS.REPLAY_BUFFER_MAX_SIZE]
+            self.move_buffer["labels"] = self.move_buffer["labels"][:CONSTANTS.REPLAY_BUFFER_MAX_SIZE]
+                
+
     def train_agent(self, num_games: int) -> None:
         if CONSTANTS.M_THREAD:
             for n in range(num_games//CONSTANTS.CORES):
@@ -50,13 +72,13 @@ class RL:
                     RL.play_game, [self]*CONSTANTS.CORES))
                 inputs = np.concatenate([inputs for (inputs, _) in examples])
                 labels = np.concatenate([labels for (_, labels) in examples])
-                print(inputs)
-                print(labels)
                 for inp in inputs:
                     print(self.model.predict(inp))
-                self.model.train(inputs, labels)
-                avg_epoch_loss = self.model.train(inputs, labels)
-                wandb.log({'loss': avg_epoch_loss})
+                self.add_training_examples(inputs=inputs, labels=labels)
+                chosen_inputs, chosen_labels = self.get_training_examples()
+                avg_epoch_loss = self.model.train(chosen_inputs, chosen_labels)
+                if CONSTANTS.ENABLE_WANDB:
+                    wandb.log({'loss': avg_epoch_loss})
 
         else:
             for n in range(num_games):
@@ -65,7 +87,8 @@ class RL:
                 print(inputs)
                 print(labels)
                 avg_epoch_loss = self.model.train(inputs, labels)
-                wandb.log({'loss': avg_epoch_loss})
+                if CONSTANTS.ENABLE_WANDB:
+                    wandb.log({'loss': avg_epoch_loss})
 
     def play_game(self) -> np.ndarray:
         # TODO not quite sure of the numpy code here
@@ -192,7 +215,8 @@ def get_neural_agents(game : Game, time_stamp : str, indicies : list[int] = None
 
 
 if __name__ == "__main__":
-    wandb.init(project="RL-hex")
+    if CONSTANTS.ENABLE_WANDB:
+        wandb.init(project="RL-hex")
     train_from_conf()
     # game = Hex(3)
     # get_neural_agents(game, '2023-03-03_9:51',)
