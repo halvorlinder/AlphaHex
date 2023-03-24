@@ -30,6 +30,7 @@ class PytorchNN(NeuralNet):
         return trainer.train(examples)
 
     def predict(self, data : np.ndarray, device = CONSTANTS.DEVICE) -> np.ndarray:
+        self.model.eval()
         output : torch.Tensor = self.model.forward(torch.tensor(np.array([data], dtype=float), dtype=torch.float32, device=device))
         return torch.nn.functional.softmax(output, dim=1).detach().cpu().numpy().flatten()
 
@@ -128,14 +129,24 @@ class FFNet(nn.Module):
         super().__init__()
         self.state_representation = StateRepresentation.FLAT
         if not filename:
-            self.layers = nn.ModuleList([nn.Linear(inp, out) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS, CONSTANTS.LAYERS+[move_cardinality])])
+            self.layers = nn.ModuleList([nn.Sequential(
+                nn.Linear(inp, out), 
+                nn.BatchNorm1d(out), 
+                nn.ReLU(), 
+                nn.Dropout(CONSTANTS.DROPOUT_RATE)
+                ) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS[:-1], CONSTANTS.LAYERS[1:])])
+            self.final_layer = nn.Sequential(
+                nn.Linear(CONSTANTS.LAYERS[-1], move_cardinality)
+            )
         else: 
             self.load_state_dict(torch.load(filename), map_location=CONSTANTS.DEVICE)
 
         self.to(device=CONSTANTS.DEVICE)
 
     def forward(self, x):
-        return reduce(lambda x, f: F.relu(f(x)), self.layers, x )
+        x = reduce(lambda x, f: F.relu(f(x)), self.layers, x )
+        x = self.final_layer(x)
+        return x
     
 
 class Trainer():
@@ -159,7 +170,6 @@ class Trainer():
         total_loss = 0.
 
         for i, data in enumerate(training_loader):
-            # print(i)
             inputs, labels = data
 
             optimizer.zero_grad()
