@@ -1,3 +1,4 @@
+import torch
 from enum import Enum, auto
 
 class NetworkArchitecture(Enum):
@@ -24,6 +25,7 @@ DEBUG_LEVEL = 0
 NUM_EPOCHS = 2
 LEARNING_RATE = 0.005
 BATCH_SIZE = 4
+DEVICE = "cpu" # "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
 
 # NET TOPOLOGY
