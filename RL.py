@@ -1,14 +1,19 @@
 from __future__ import annotations
+from datetime import datetime
+import json
+import os
+from connect2 import Connect2
+from hex import Hex
+from tic_tac_toe import TicTacToeGame
 from agent import Agent
 from game import Game, Gamestate
-from ANET import FFNet, PytorchNN, Trainer
-import random
+from ANET import ConvNet, FFNet, PytorchNN, Trainer
 import numpy as np
 from MCTS import MCTS, UCB
-from hex_agents import RandomHexAgent, RandomConnect2Agent, MCTSHexAgent
 from neural_net import NeuralNet
-from tournament import TournamentPlayer
 from utils import epsilon_greedy_choise, filter_and_normalize
+import multiprocessing as mp
+import wandb
 
 import CONSTANTS
 
@@ -38,13 +43,29 @@ class RL:
         self.model.load(filename)
 
     def train_agent(self, num_games: int) -> None:
-        # Might need some more args to configure the MCTS
-        # trainer = Trainer(self.agent.neural_network, 1, 0.05, 8)
-        for n in range(num_games):
-            print(n)
-            inputs, labels = self.play_game()
-            self.model.train(inputs, labels)
-        # self.model.save('heisann')
+        if CONSTANTS.M_THREAD:
+            for n in range(num_games//CONSTANTS.CORES):
+                print(n*CONSTANTS.CORES)
+                examples = list(mp.Pool(CONSTANTS.CORES).map(
+                    RL.play_game, [self]*CONSTANTS.CORES))
+                inputs = np.concatenate([inputs for (inputs, _) in examples])
+                labels = np.concatenate([labels for (_, labels) in examples])
+                print(inputs)
+                print(labels)
+                for inp in inputs:
+                    print(self.model.predict(inp))
+                self.model.train(inputs, labels)
+                avg_epoch_loss = self.model.train(inputs, labels)
+                wandb.log({'loss': avg_epoch_loss})
+
+        else:
+            for n in range(num_games):
+                print(n)
+                inputs, labels = self.play_game()
+                print(inputs)
+                print(labels)
+                avg_epoch_loss = self.model.train(inputs, labels)
+                wandb.log({'loss': avg_epoch_loss})
 
     def play_game(self) -> np.ndarray:
         # TODO not quite sure of the numpy code here
@@ -54,14 +75,19 @@ class RL:
         training_visits = []
         training_states_full = []
         next_root = None
-        while not gamestate.reward():
+        while gamestate.reward() == None:
+            print(gamestate)
             mcts = MCTS(self.game, root=next_root,
-                        predict_func=self.model.predict)
+                        predict_func=self.model.predict, representation=self.model.model.state_representation)
             action_probs = mcts.run_simulations(CONSTANTS.ROLLOUTS)
+            # print(gamestate.board)
+            # print(action_probs)
+            # print(gamestate.get_legal_moves())
 
             selected_move = epsilon_greedy_choise(
-                action_probs, gamestate.get_legal_moves(), epsilon=self.epsilon)
-            training_states.append(gamestate.get_int_list_representation())
+                action_probs, gamestate.get_legal_moves(), epsilon=CONSTANTS.GAME_MOVE_EPSILON)
+            training_states.append(gamestate.get_representation(
+                self.model.model.state_representation))
             training_states_full.append(gamestate)
             training_probs.append(action_probs)
             training_visits.append(mcts.get_visits())
@@ -87,81 +113,86 @@ class NeuralAgent(Agent):
             self.name = name
 
     def get_next_move(self, gamestate: Gamestate) -> int:
-        prediction = self.neural_net.predict(gamestate.get_int_list_representation())
-        # print(prediction)
-        # print(filter_and_normalize(prediction, gamestate.get_legal_moves()))
-        prediction = np.exp(prediction)/sum(np.exp(prediction)) # apply softmax to avoid negative probabilities
+        prediction = self.neural_net.predict(gamestate.get_representation(
+            self.neural_net.model.state_representation))
+        print(prediction)
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
-        move = np.random.choice([n for n in range(len(probs))], p=probs)
-        # move = epsilon_greedy_choise(filter_and_normalize(prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
-        # print(move)
+        match CONSTANTS.AGENT_SELECTION_POLICY:
+            case CONSTANTS.SelectionPolicy.MAX:
+                move = np.random.choice(
+                    [n for n in range(len(probs))], p=probs)
+            case CONSTANTS.SelectionPolicy.SAMPLE:
+                move = epsilon_greedy_choise(filter_and_normalize(
+                    prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
         return move
 
-if __name__ == "__main__":
-    from hex import Hex
-    from connect2 import Connect2
-    hex = Hex(3)
-    connect2 = Connect2()
-    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_1 = PytorchNN()
-    # pynet_1.load(net_1, 'agent_49')
-    # rl = RL(hex, pynet_1)
+def get_agent_folder() -> str:
+    match CONSTANTS.GAME:
+        case CONSTANTS.TrainingGame.HEX:
+            return f'agents/hex{CONSTANTS.HEX_SIZE}/'
+        case CONSTANTS.TrainingGame.C2:
+            return f'agents/c2/'
+        case CONSTANTS.TrainingGame.TTT:
+            return f'agents/ttt/'
+
+def train_from_conf() -> None:
+
+    match CONSTANTS.GAME:
+        case CONSTANTS.TrainingGame.HEX:
+            game = Hex(CONSTANTS.HEX_SIZE)
+        case CONSTANTS.TrainingGame.TTT:
+            game = TicTacToeGame()
+        case CONSTANTS.TrainingGame.C2:
+            game = Connect2()
+
+    match CONSTANTS.NETWORK_ARCHITECTURE:
+        case CONSTANTS.NetworkArchitecture.FF:
+            net = FFNet(
+                game.state_representation_length,
+                game.move_cardinality
+            )
+        case CONSTANTS.NetworkArchitecture.CONV:
+            raise NotImplementedError()
 
     rl = RL(
-        hex, 
-        PytorchNN(
-            model=FFNet(
-            hex.state_representation_length, 
-            hex.move_cardinality
-            )
-        )
+        game,
+        PytorchNN(model=net),
+        epsilon=CONSTANTS.GAME_MOVE_EPSILON
     )
+    t = datetime.now()
+    time_stamp = f'{t.date()}_{t.hour}:{t.minute}'.replace(" " , "_")
     
-    rl.train_agent(100)
-    rl.model.save('agent_100')
+    os.makedirs(f'{get_agent_folder()}/{time_stamp}', exist_ok=True)
+    constants = dict(list(map(lambda kv: (str(kv[0]), str(kv[1])), filter(lambda kv: kv[0].isupper(), CONSTANTS.__dict__.items()))))
+    with open(f'{get_agent_folder()}/{time_stamp}/METADATA.json', "w") as metadata:
+        json.dump(constants, metadata)
+    for i in range(CONSTANTS.NUM_SAVES):
+        rl.train_agent(CONSTANTS.GAMES_PER_SAVE)
+        rl.model.save(f'{get_agent_folder()}/{time_stamp}/{i}')
 
-    # rl.train_agent(250)
-    # rl.model.save('agent_500')
-    # rl.train_agent(250)
-    # rl.model.save('agent_750')
-    # rl.train_agent(250)
-    # rl.model.save('agent_1000')
-    # rl.train_agent(50)
-    # rl.model.save('agent_100')
-    # rl.train_agent(50)
-    # rl.model.save('agent_150')
-    # rl.train_agent(50)
-    # rl.model.save('agent_200')
+def get_neural_agents(game : Game, time_stamp : str, indicies : list[int] = None):
+    with open(f'agents/{game.get_name()}/{time_stamp}/METADATA.json') as json_file:
+        data = json.load(json_file)
+        match data['NETWORK_ARCHITECTURE']:
+            case 'NetworkArchitecture.FF':
+                net_gen = lambda:FFNet(game.state_representation_length, game.move_cardinality)
+            case 'NetworkArchitecture.CONV':
+                raise(NotImplementedError())
+        all_indicies = list(range(int(data['NUM_SAVES'])))
+        games_per_save = int(data['GAMES_PER_SAVE'])
 
-    # net_50 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_50 = PytorchNN()
-    # pynet_50.load(net_50, 'agent_50')
-
-    net_100 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    pynet_100 = PytorchNN()
-    pynet_100.load(net_100, 'agent_100')
-
-    # net_150 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_150 = PytorchNN()
-    # pynet_150.load(net_150, 'agent_150')
-
-    # net_200 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_200 = PytorchNN()
-    # pynet_200.load(net_200, 'agent_200')
-
-    # net_1 = FFNet(hex.state_representation_length, hex.move_cardinality)
-    # pynet_100 = PytorchNN()
-    # pynet_100.load(net_1, 'agent_100')
-
-    tourney = TournamentPlayer(Hex(3), [RandomHexAgent('random'), NeuralAgent(pynet_100, '100')], 100, True)
-    scores, wins = tourney.play_tournament()
-    print(wins)
-
-    # tourney = TournamentPlayer(Hex(3), [NeuralAgent(pynet_1, '1'), RandomHexAgent('random'),], 100, True)
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
+    agents = []
+    for i in all_indicies if not indicies else indicies:
+        net = net_gen()
+        pynet = PytorchNN()
+        pynet.load(net, f'agents/{game.get_name()}/{time_stamp}/{i}')
+        agents.append(NeuralAgent(pynet, f'{games_per_save*(i+1)}'))
+    print(agents)
+    return agents
 
 
-    # tourney = TournamentPlayer(Hex(4), [MCTSHexAgent("MCTS1", 1000, 4), MCTSHexAgent("MCTS2", 1000, 4)][::1], 100, True)
-    # scores, wins = tourney.play_tournament()
-    # print(wins)
+if __name__ == "__main__":
+    wandb.init(project="RL-hex")
+    train_from_conf()
+    # game = Hex(3)
+    # get_neural_agents(game, '2023-03-03_9:51',)

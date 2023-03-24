@@ -3,13 +3,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import comb
 import os
+from RL import get_neural_agents
 
 from agent import Agent
 from game import Game
 from game_player import GameInstance
-from hex import Hex
-from hex_agents import RandomHexAgent
-from dummy_multiplayer_game import DummyMultiAgent, DummyMultiAgentGame
+from gen_agents import MCTSAgent
+from tic_tac_toe import TicTacToeGame
+import CONSTANTS
 
 
 class TournamentPlayer:
@@ -28,19 +29,23 @@ class TournamentPlayer:
                 agents = list(map(lambda enum_agent: enum_agent[1], enum_agents))
                 indices = list(map(lambda enum_agent: enum_agent[0], enum_agents))
                 game_inst = GameInstance(self.game, agents, self.display)
-                winner = indices[game_inst.start()]
-                losers = set(indices)
-                losers.remove(winner)
-                losers = sorted(list(losers))
-                score_index = tuple([ winner ] + losers)
-                self.scores[score_index]+=1
-                self.agents_wins[winner]+=1
+                scores = game_inst.start()
+                for i, score in enumerate(scores):
+                    current = indices[i]
+                    other = set(indices) 
+                    other.remove(current)
+                    other = sorted(list(other))
+                    score_index = tuple([ current ] + other)
+                    self.scores[score_index]+=score
+                    self.agents_wins[current]+=score
                 if self.display:
                     self.plot_matchup(indices)
                     os.system('clear')
+                print(self.agents_wins)
         if self.display:
             self.plot_wins()
                 
+        print(self.agents_wins)
         return self.scores, self.agents_wins
 
     def plot_matchup(self, players:list[int]) -> None:
@@ -64,10 +69,19 @@ class TournamentPlayer:
 
     
 if __name__ == '__main__':
-    tourney = TournamentPlayer(Hex(6), [RandomHexAgent('1'), RandomHexAgent('2'), RandomHexAgent('3'), RandomHexAgent('4')], 10, True)
+    from gen_agents import RandomAgent
+    from hex import Hex
+    from tic_tac_toe import TicTacToeGame
+    from connect2 import Connect2
+
+    match CONSTANTS.GAME:
+        case CONSTANTS.TrainingGame.HEX:
+            game = Hex(CONSTANTS.HEX_SIZE)
+        case CONSTANTS.TrainingGame.TTT:
+            game = TicTacToeGame()
+        case CONSTANTS.TrainingGame.C2:
+            game = Connect2()
+
+    tourney = TournamentPlayer(game, get_neural_agents(game, CONSTANTS.NEURAL_AGENT_TIMESTAMP), CONSTANTS.TOURNEY_NUM_GAMES, True)
     scores, wins = tourney.play_tournament()
     print(wins)
-
-    # tourney = TournamentPlayer(DummyMultiAgentGame(3), [DummyMultiAgent('1'), DummyMultiAgent('2'), DummyMultiAgent('3'), DummyMultiAgent('4'), DummyMultiAgent('5')], 10, True)
-    # scores = tourney.play_tournament()
-    # print(scores)

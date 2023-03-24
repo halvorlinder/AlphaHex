@@ -1,4 +1,5 @@
 from functools import partial
+import itertools
 import numpy as np
 import random
 from game import Game, Gamestate, Move
@@ -6,7 +7,9 @@ from connect2 import Connect2, Connect2Gamestate
 from hex import Hex
 from torch import float32, float16, float64
 
+from representations import StateRepresentation
 import CONSTANTS
+from tic_tac_toe import TicTacToeGame
 
 DEBUG = False
 
@@ -62,14 +65,14 @@ def dummy_predict(n: int, _: Gamestate):
 
 class MCTS():
 
-    def __init__(self, game: Game, score_func=UCB, root: Node = None, predict_func=None) -> None:
+    def __init__(self, game: Game, score_func=UCB, root: Node = None, predict_func=None, representation : StateRepresentation = StateRepresentation.FLAT ) -> None:
         if DEBUG:
             print(f'Starting MCTS from')
         self.game = game
+        self.representation = representation
         if root:
             self.initial_gamestate = root.gamestate
             self.current_gamestate = root.gamestate
-            # TODO is this okay? yes probably
             self.root = root
         else:
             self.initial_gamestate = game.get_initial_position()
@@ -80,8 +83,9 @@ class MCTS():
             print(f'With {self.root.visits} previous visits')
             print()
         self.score_func = score_func
-        self.predict_func = predict_func if predict_func else partial(
-            dummy_predict, game.move_cardinality)
+        self.predict_func, self.epsilon = (predict_func, CONSTANTS.MCTS_EPSILON) if predict_func else (partial(
+            dummy_predict, game.move_cardinality), 1)
+        
 
     def normalize_action_probs(self, action_probs, gamestate: Gamestate):
         norm_action_probs = np.array([prob * mask for prob,
@@ -92,10 +96,14 @@ class MCTS():
 
         self.current_gamestate = self.initial_gamestate
         node = self.root
-        search_path = [node]
+        search_path = []
 
         # using tree policy to find leaf node
         if DEBUG:
+            print(f'Root:')
+            for action, nd in node.children.items():
+                score = self.score_func(parent=node, child=nd)
+                print(f'\t\tAction: {action}\tUCB: {score}, Visits: {nd.visits}, Value: {nd.value}')
             print(f'Starting tree search:')
         while (len(node.children) > 0):  # node has children, already expanded
             node = node.select_child(self.score_func)
@@ -114,10 +122,10 @@ class MCTS():
             return
 
         # print(node.gamestate)
-        # print(np.array([node.gamestate.get_int_list_representation()]))
-        # print(len(np.array([node.gamestate.get_int_list_representation()])[0]))
+        # print(np.array([node.gamestate.get_representation(self.representation)]))
+        # print(len(np.array([node.gamestate.get_representation(self.representation)])[0]))
         action_probs = self.predict_func(
-            node.gamestate.get_int_list_representation())
+            node.gamestate.get_representation(self.representation))
         # print(action_probs)
         norm_action_probs = self.normalize_action_probs(
             action_probs=action_probs, gamestate=node.gamestate)
@@ -133,7 +141,7 @@ class MCTS():
             print(f'Starting rollout')
         while reward == None:  # i.e. we are not in a terminal state
             action_probs = self.predict_func(
-                self.current_gamestate.get_int_list_representation()
+                self.current_gamestate.get_representation(self.representation)
                 )
             norm_action_probs = self.normalize_action_probs(
                 action_probs=action_probs, 
@@ -144,7 +152,7 @@ class MCTS():
             # select next move in rollout phase
             choose_random = random.random()
             move = None
-            if choose_random < CONSTANTS.MCTS_EPSILON:
+            if choose_random < self.epsilon:
                 if DEBUG: 
                     print(f'\tEpsilon choice')
                 true_idx = np.argwhere(
@@ -168,17 +176,19 @@ class MCTS():
             print(f'Incrementing values')
         self.increment_reward(search_path=search_path, reward=reward)
 
-    def increment_reward(self, search_path : list[Node], reward: int):
+    def increment_reward(self, search_path : list[Node], reward: list[int]):
         player_in_root = self.initial_gamestate.get_agent_index()
-        offset = 1 if ( player_in_root == 0 and reward == 1 ) or (player_in_root == 1 and reward == -1) else 0
         if DEBUG:
-            print(f'Offset: {offset}')
             print(f'Player: {player_in_root}')
             print(f'Reward: {reward}')
+
         for node in search_path:
             node.visits += 1
-        for node in search_path[offset::2]:
-            node.value += 1
+        self.root.visits+=1
+        
+        offset_reward = reward[player_in_root:] + reward[:player_in_root]
+        for node, rew in zip(search_path, itertools.cycle(offset_reward)):
+            node.value += rew
 
     def run_simulations(self, n: int) -> np.ndarray:
         for _ in range(n):
@@ -205,12 +215,8 @@ class MCTS():
 
 
 if __name__ == "__main__":
-    game = Hex(4)
-    gs = game.get_initial_position()
-    mcts = MCTS(game, score_func=UCB)
-    for i in range(1):
-        mcts.run_simulation()
-
-    print("Best place to start:")
-    for _, child in mcts.root.children.items():
-        print(child.value)
+    game = TicTacToeGame()
+    gs = game.from_int_list_representation([0,2,1,1,2,2,0,1,1])
+    mcts = MCTS(game, root=Node(gs))
+    for _ in range(1):
+        print(mcts.run_simulations(1000))
