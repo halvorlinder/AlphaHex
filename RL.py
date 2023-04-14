@@ -54,9 +54,9 @@ class RL:
                 print(labels)
                 for inp in inputs:
                     print(self.model.predict(inp))
-                self.model.train(inputs, labels)
+                # self.model.train(inputs, labels)
                 avg_epoch_loss = self.model.train(inputs, labels)
-                wandb.log({'loss': avg_epoch_loss})
+                # wandb.log({'loss': avg_epoch_loss})
 
         else:
             for n in range(num_games):
@@ -65,7 +65,7 @@ class RL:
                 print(inputs)
                 print(labels)
                 avg_epoch_loss = self.model.train(inputs, labels)
-                wandb.log({'loss': avg_epoch_loss})
+                # wandb.log({'loss': avg_epoch_loss})
 
     def play_game(self) -> np.ndarray:
         # TODO not quite sure of the numpy code here
@@ -115,13 +115,13 @@ class NeuralAgent(Agent):
     def get_next_move(self, gamestate: Gamestate) -> int:
         prediction = self.neural_net.predict(gamestate.get_representation(
             self.neural_net.model.state_representation))
-        print(prediction)
+        # print(prediction)
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
         match CONSTANTS.AGENT_SELECTION_POLICY:
-            case CONSTANTS.SelectionPolicy.MAX:
-                move = np.random.choice(
-                    [n for n in range(len(probs))], p=probs)
             case CONSTANTS.SelectionPolicy.SAMPLE:
+                move = np.random.choice(
+                    [n for n in range(len(probs))], p=(probs**2)/sum(probs**2))
+            case CONSTANTS.SelectionPolicy.MAX:
                 move = epsilon_greedy_choise(filter_and_normalize(
                     prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
         return move
@@ -192,7 +192,7 @@ def get_neural_agents(game : Game, time_stamp : str, indicies : list[int] = None
 
 
 if __name__ == "__main__":
-    wandb.init(project="RL-hex")
+    # wandb.init(project="RL-hex")
     train_from_conf()
     # game = Hex(3)
     # get_neural_agents(game, '2023-03-03_9:51',)
