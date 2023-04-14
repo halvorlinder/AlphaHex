@@ -6,6 +6,7 @@ from game import Game, Gamestate, Move
 from connect2 import Connect2, Connect2Gamestate
 from hex import Hex
 from torch import float32, float16, float64
+import time
 
 from representations import StateRepresentation
 import CONSTANTS
@@ -191,9 +192,19 @@ class MCTS():
             node.value += rew
 
     def run_simulations(self, n: int) -> np.ndarray:
-        for _ in range(n):
+        start_time = time.time()
+        i = 0
+        while i < n:
             self.run_simulation()
+            time_diff = time.time() - start_time
+            if time_diff > CONSTANTS.MAX_ROLLOUT_TIME_SECONDS and i > 1:
+                print(time_diff)
+                print(i)
+                break
+            i += 1
+        print(f"Number of rollouts: {i}")
         return self.get_norm_action_probs()
+
 
     def get_norm_action_probs(self) -> np.ndarray:
         action_probs = [0] * self.game.move_cardinality
