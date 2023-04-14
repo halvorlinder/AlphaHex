@@ -48,11 +48,11 @@ class RL:
     def get_training_examples(self):
         print(self.move_buffer["inputs"])
         buffer_length = self.move_buffer["inputs"].shape[0]
-        chosen_indexes = random.sample(range(0, buffer_length), CONSTANTS.REPLAY_BUFFER_MOVES_CHOSEN)
+        chosen_indexes = random.sample(range(0, buffer_length), min(CONSTANTS.REPLAY_BUFFER_MOVES_CHOSEN, buffer_length))
         chosen_inputs = self.move_buffer["inputs"][chosen_indexes]
         chosen_labels = self.move_buffer["labels"][chosen_indexes]
-        self.move_buffer["inputs"] = np.delete(self.move_buffer["inputs"], chosen_indexes, axis=0)
-        self.move_buffer["labels"] = np.delete(self.move_buffer["labels"], chosen_indexes, axis=0)
+        # self.move_buffer["inputs"] = np.delete(self.move_buffer["inputs"], chosen_indexes, axis=0)
+        # self.move_buffer["labels"] = np.delete(self.move_buffer["labels"], chosen_indexes, axis=0)
         return chosen_inputs, chosen_labels
     
     def add_training_examples(self, inputs, labels):
