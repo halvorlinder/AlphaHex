@@ -139,13 +139,13 @@ class NeuralAgent(Agent):
     def get_next_move(self, gamestate: Gamestate) -> int:
         prediction = self.neural_net.predict(gamestate.get_representation(
             self.neural_net.model.state_representation))
-        print(prediction)
+        # print(prediction)
         probs = filter_and_normalize(prediction, gamestate.get_legal_moves())
         match CONSTANTS.AGENT_SELECTION_POLICY:
-            case CONSTANTS.SelectionPolicy.MAX:
-                move = np.random.choice(
-                    [n for n in range(len(probs))], p=probs)
             case CONSTANTS.SelectionPolicy.SAMPLE:
+                move = np.random.choice(
+                    [n for n in range(len(probs))], p=(probs**2)/sum(probs**2))
+            case CONSTANTS.SelectionPolicy.MAX:
                 move = epsilon_greedy_choise(filter_and_normalize(
                     prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
         return move
