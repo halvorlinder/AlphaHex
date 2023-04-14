@@ -15,6 +15,7 @@ from utils import epsilon_greedy_choise, filter_and_normalize
 import multiprocessing as mp
 import wandb
 import random
+import torch.nn.functional as F
 
 import CONSTANTS
 
@@ -99,7 +100,7 @@ class RL:
         training_states_full = []
         next_root = None
         while gamestate.reward() == None:
-            # print(gamestate)
+            print(gamestate)
             mcts = MCTS(self.game, root=next_root,
                         predict_func=self.model.predict, representation=self.model.model.state_representation)
             action_probs = mcts.run_simulations(CONSTANTS.ROLLOUTS)
@@ -168,14 +169,30 @@ def train_from_conf() -> None:
         case CONSTANTS.TrainingGame.C2:
             game = Connect2()
 
+    match CONSTANTS.HIDDEN_NODE_ACTIVATION:
+        case CONSTANTS.HiddenNodeActivation.LINEAR:
+            hidden_node_activation = F.linear
+        case CONSTANTS.HiddenNodeActivation.TANH:
+            hidden_node_activation = F.tanh
+        case CONSTANTS.HiddenNodeActivation.SIGMOID:
+            hidden_node_activation = F.sigmoid
+        case CONSTANTS.HiddenNodeActivation.RELU:
+            hidden_node_activation = F.relu
+
     match CONSTANTS.NETWORK_ARCHITECTURE:
         case CONSTANTS.NetworkArchitecture.FF:
             net = FFNet(
                 game.state_representation_length,
-                game.move_cardinality
+                game.move_cardinality, 
+                hidden_node_activation=hidden_node_activation
             )
         case CONSTANTS.NetworkArchitecture.CONV:
-            raise NotImplementedError()
+            net = ConvNet(
+                board_state_length=game.state_representation_length, 
+                move_cardinality=game.move_cardinality, 
+                board_dimension_depth=game.conv_net_layers, 
+                hidden_node_activation=hidden_node_activation
+            )
 
     rl = RL(
         game,
@@ -200,7 +217,11 @@ def get_neural_agents(game : Game, time_stamp : str, indicies : list[int] = None
             case 'NetworkArchitecture.FF':
                 net_gen = lambda:FFNet(game.state_representation_length, game.move_cardinality)
             case 'NetworkArchitecture.CONV':
-                raise(NotImplementedError())
+                net_gen = lambda:ConvNet(
+                    board_state_length=game.state_representation_length, 
+                    move_cardinality=game.move_cardinality, 
+                    board_dimension_depth=game.conv_net_layers
+                    )
         all_indicies = list(range(int(data['NUM_SAVES'])))
         games_per_save = int(data['GAMES_PER_SAVE'])
 

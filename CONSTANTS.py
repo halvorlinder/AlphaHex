@@ -1,9 +1,9 @@
-import torch
 from enum import Enum, auto
 
 class NetworkArchitecture(Enum):
     FF = auto()
     CONV = auto()
+    RESNET = auto()
 
 class SelectionPolicy(Enum):
     SAMPLE = auto()
@@ -13,6 +13,19 @@ class TrainingGame(Enum):
     HEX = auto()
     C2 = auto()
     TTT = auto()
+
+class Optimizer(Enum):
+    ADAGRAD = auto()
+    SGD = auto()
+    RMSPROP = auto()
+    ADAM = auto()
+    ADAMW = auto()
+
+class HiddenNodeActivation():
+    LINEAR = auto()
+    TANH = auto()
+    RELU = auto()
+    SIGMOID = auto()
 
 
 # 0: no debugging
@@ -29,7 +42,9 @@ DEVICE = "cpu" # "cuda" if torch.cuda.is_available() else "mps" if torch.backend
 
 
 # NET TOPOLOGY
-NETWORK_ARCHITECTURE = NetworkArchitecture.FF
+NETWORK_ARCHITECTURE = NetworkArchitecture.CONV
+OPTIMIZER = Optimizer.ADAM
+HIDDEN_NODE_ACTIVATION = HiddenNodeActivation.RELU
 
 # FF
 LAYERS = [100, 100]
@@ -50,8 +65,8 @@ CORES = 10
 AGENT_SELECTION_POLICY = SelectionPolicy.MAX
 
 # Agent training 
-GAMES_PER_SAVE = 250
-NUM_SAVES = 4
+GAMES_PER_SAVE = 100
+NUM_SAVES = 5
 
 GAME = TrainingGame.HEX
 
@@ -63,9 +78,9 @@ REPLAY_BUFFER_MOVES_CHOSEN = 50
 HEX_SIZE = 4
 
 # TOURNEY 
-NEURAL_AGENT_TIMESTAMP = "2023-03-24_14:58"
+NEURAL_AGENT_TIMESTAMP = "2023-04-13_12:35"
 TOURNEY_NUM_GAMES = 50
 RANDOM_IN_TOURNEY = True
 
 # Wandb
-ENABLE_WANDB = True
+ENABLE_WANDB = False
