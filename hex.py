@@ -280,6 +280,7 @@ class HexState(Gamestate):
         plt.plot([x2,x3], [y2,y3], color = 'blue', linewidth = 10)
         plt.plot([x3,x4], [y3,y4], color = 'red', linewidth = 10)
         plt.plot([x4,x1], [y4,y1], color = 'blue', linewidth = 10)
+        plt.draw()
 
 class HexMove(Move):
 
