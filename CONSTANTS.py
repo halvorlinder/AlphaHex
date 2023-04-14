@@ -1,9 +1,9 @@
-import torch
 from enum import Enum, auto
 
 class NetworkArchitecture(Enum):
     FF = auto()
     CONV = auto()
+    RESNET = auto()
 
 class SelectionPolicy(Enum):
     SAMPLE = auto()
@@ -14,6 +14,19 @@ class TrainingGame(Enum):
     C2 = auto()
     TTT = auto()
 
+class Optimizer(Enum):
+    ADAGRAD = auto()
+    SGD = auto()
+    RMSPROP = auto()
+    ADAM = auto()
+    ADAMW = auto()
+
+class HiddenNodeActivation():
+    LINEAR = auto()
+    TANH = auto()
+    RELU = auto()
+    SIGMOID = auto()
+
 
 # 0: no debugging
 # 1: light debugging
@@ -22,21 +35,23 @@ DEBUG_LEVEL = 0
 
 
 # CONSTANTS IN NEURAL NET TRAINER
-NUM_EPOCHS = 1
-LEARNING_RATE = 0.05
-BATCH_SIZE = 32
+NUM_EPOCHS = 3
+LEARNING_RATE = 0.001
+BATCH_SIZE = 16
 DEVICE = "cpu" # "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
 
 # NET TOPOLOGY
-NETWORK_ARCHITECTURE = NetworkArchitecture.FF
+NETWORK_ARCHITECTURE = NetworkArchitecture.CONV
+OPTIMIZER = Optimizer.ADAM
+HIDDEN_NODE_ACTIVATION = HiddenNodeActivation.RELU
 
 # FF
-LAYERS = [100, 100, 100]
-
+LAYERS = [100, 100]
+DROPOUT_RATE = 0.2
 
 # CONSTANTS IN MCTS
-MCTS_EPSILON = 0.1
+MCTS_EPSILON = 0.2
 GAME_MOVE_EPSILON = 0.1
 SQRT_2 = 1.41
 ROLLOUTS = 1000
@@ -46,21 +61,28 @@ MIN_NUMBER_ROLLOUTS = 10 # must be > 1, has precedence over MAX_ROLLOUT_TIME_SEC
 
 # Multi threading
 M_THREAD = True
-CORES = 4
-
+CORES = 10
 
 # Agent behaviour
 AGENT_SELECTION_POLICY = SelectionPolicy.MAX
 
 # Agent training 
-GAMES_PER_SAVE = 500
-NUM_SAVES = 4
+GAMES_PER_SAVE = 100
+NUM_SAVES = 10
 
 GAME = TrainingGame.HEX
+
+# Replay buffer
+REPLAY_BUFFER_MAX_SIZE = 5000
+REPLAY_BUFFER_MOVES_CHOSEN = 250
 
 # Hex
 HEX_SIZE = 7
 
 # TOURNEY 
-NEURAL_AGENT_TIMESTAMP = "2023-03-03_9:51"
+NEURAL_AGENT_TIMESTAMP = "2023-04-14_10:53"
 TOURNEY_NUM_GAMES = 50
+RANDOM_IN_TOURNEY = True
+
+# Wandb
+ENABLE_WANDB = True

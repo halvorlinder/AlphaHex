@@ -31,20 +31,23 @@ class Node():
                 self.children[action] = Node(gamestate=new_gamestate)
 
     def select_child(self, score_func):
-        # TODO Is this not just argmax, if so refactor to make it more readable (np.argmax)
-        max_score = -float("inf")
-        selected_child = None
-        for action,child in self.children.items():
-            score = score_func(parent=self, child=child)
-            if DEBUG:
-                print(f'\t\tAction: {action}\tUCB: {score}')
-            if score > max_score:
-                selected_child = child
-                selected_action = action
-                max_score = score
-        if DEBUG:
-            print(f'\tSelecting {selected_action}')
-        return selected_child
+        # max_score = -float("inf")
+        # selected_child = None
+        scores = np.array([score_func(parent=self, child=child) for (action, child) in self.children.items()])
+        index = np.random.choice(np.flatnonzero(scores == scores.max()))
+        # for action,child in self.children.items():
+        #     score = score_func(parent=self, child=child)
+        #     if DEBUG:
+        #         print(f'\t\tAction: {action}\tUCB: {score}')
+        #     if score > max_score:
+        #         selected_child = child
+        #         selected_action = action
+        #         max_score = score
+        # if DEBUG:
+        #     print(f'\tSelecting {selected_action}')
+        # print(max_score==scores[index])
+        return list(self.children.items())[index][1]
+        # return selected_child
 
 
 # def UCB(parent, child):
