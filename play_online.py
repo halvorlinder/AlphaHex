@@ -28,7 +28,7 @@ class MyClient(ActorClient):
         gamestate = HexState.from_list(board)
         row, col = HexMove.from_int_representation(actor.get_next_move(gamestate), SIZE).as_tuple()
         print(row, col)
-        return SIZE-1-col, row
+        return int(SIZE-1-col), int(row)
 
 if __name__ == '__main__':
     client = MyClient(auth=API_TOKEN, qualify=False)
