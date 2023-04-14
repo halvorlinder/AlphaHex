@@ -7,7 +7,7 @@ from hex import Hex
 from tic_tac_toe import TicTacToeGame
 from agent import Agent
 from game import Game, Gamestate
-from ANET import ConvNet, FFNet, PytorchNN, Trainer
+from ANET import ConvNet, FFNet, PytorchNN, Trainer, ConvResNet
 import numpy as np
 from MCTS import MCTS, UCB
 from neural_net import NeuralNet
@@ -73,8 +73,6 @@ class RL:
                     RL.play_game, [self]*CONSTANTS.CORES))
                 inputs = np.concatenate([inputs for (inputs, _) in examples])
                 labels = np.concatenate([labels for (_, labels) in examples])
-                # for inp in inputs:
-                #     print(self.model.predict(inp))
                 self.add_training_examples(inputs=inputs, labels=labels)
                 chosen_inputs, chosen_labels = self.get_training_examples()
                 avg_epoch_loss = self.model.train(chosen_inputs, chosen_labels)
@@ -83,10 +81,9 @@ class RL:
 
         else:
             for n in range(num_games):
-                print(n)
                 inputs, labels = self.play_game()
-                print(inputs)
-                print(labels)
+                self.add_training_examples(inputs=inputs, labels=labels)
+                chosen_inputs, chosen_labels = self.get_training_examples()
                 avg_epoch_loss = self.model.train(inputs, labels)
                 if CONSTANTS.ENABLE_WANDB:
                     wandb.log({'loss': avg_epoch_loss})
@@ -192,6 +189,14 @@ def train_from_conf() -> None:
                 move_cardinality=game.move_cardinality, 
                 board_dimension_depth=game.conv_net_layers, 
                 hidden_node_activation=hidden_node_activation
+            )
+        case CONSTANTS.NetworkArchitecture.RESNET:
+            net = ConvResNet(
+                board_dimension_depth=game.conv_net_layers, 
+                channels=256, 
+                num_res_blocks=5, 
+                board_state_length=game.state_representation_length, 
+                move_cardinality=game.move_cardinality, 
             )
 
     rl = RL(
