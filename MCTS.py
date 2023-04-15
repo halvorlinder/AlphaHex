@@ -201,11 +201,9 @@ class MCTS():
             self.run_simulation()
             time_diff = time.time() - start_time
             if time_diff > CONSTANTS.MAX_ROLLOUT_TIME_SECONDS and i > 1:
-                print(time_diff)
-                print(i)
                 break
             i += 1
-        print(f"Number of rollouts: {i}")
+        print(f"Number of rollouts: {i}. Time: {time_diff} ({time_diff / i} s/ro)")
         return self.get_norm_action_probs()
 
 
