@@ -38,6 +38,11 @@ sudo apt install tmux
 tmux 
 ```
 
+To keep the tmux session running in the background do 
+```
+ctrl-b d
+```
+
 ## Install anaconda
 ```
 cd
@@ -64,6 +69,4 @@ python RL.py
 ```
 
 ## Editing
-```
 Use Vim
-```
