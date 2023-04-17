@@ -57,6 +57,7 @@ pip install wandb
 ```
 
 ## Running 
+There is no gui on the server, so just insert return on the first line of the plot function in hex.py
 ```
 cd ~/AlphaHex
 python RL.py
