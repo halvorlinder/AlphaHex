@@ -200,7 +200,7 @@ class MCTS():
         while i < n:
             self.run_simulation()
             time_diff = time.time() - start_time
-            if time_diff > CONSTANTS.MAX_ROLLOUT_TIME_SECONDS and i > 1:
+            if time_diff > CONSTANTS.MAX_ROLLOUT_TIME_SECONDS and i >= CONSTANTS.MIN_NUMBER_ROLLOUTS:
                 break
             i += 1
         print(f"Number of rollouts: {i}. Time: {time_diff} ({time_diff / i} s/ro)")
