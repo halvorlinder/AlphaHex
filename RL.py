@@ -75,6 +75,8 @@ class RL:
         chosen_inputs_2 = self.mcts_examples["inputs"][chosen_indexes]
         chosen_labels_2 = self.mcts_examples["labels"][chosen_indexes]
 
+        if CONSTANTS.MCTS_MOVES_CHOSEN == 0:
+            return [chosen_inputs, chosen_labels]
         return np.concatenate((chosen_inputs, chosen_inputs_2)), np.concatenate((chosen_labels, chosen_labels_2))
     
     def add_training_examples(self, inputs, labels):
