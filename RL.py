@@ -27,6 +27,8 @@ class RL:
         self.model: NeuralNet = model
         self.epsilon = epsilon
         self.move_buffer = {"inputs" : np.array([]), "labels" : np.array([])}
+        self.mcts_examples = {"inputs" : np.array([]), "labels" : np.array([])}
+        self.load_MCTS_data()
 
     # def get_agent(self) -> NeuralAgent:
     #     return self.agent
@@ -45,15 +47,35 @@ class RL:
         # self.agent = NeuralAgent(FFNet(self.game.state_representation_length, self.game.move_cardinality))
         self.model.load(filename)
 
+    def load_MCTS_data(self) -> None:
+        states = []
+        probs = []
+        for i in range(8):
+            with open(f'MCTS_data/data_{i}.txt', 'r') as f:
+                for line in f:
+                    state, prob = line.split(';')
+                    state = self.game.from_int_list_representation(list(map(int, state.split(',')))).get_representation(self.model.model.state_representation)
+                    prob = list(map(float, prob.split(',')))
+                    states.append(state)
+                    probs.append(prob)
+        
+        self.mcts_examples['inputs'] = np.array(states)
+        self.mcts_examples['labels'] = np.array(probs)
+
     def get_training_examples(self):
         print(self.move_buffer["inputs"])
+
         buffer_length = self.move_buffer["inputs"].shape[0]
         chosen_indexes = random.sample(range(0, buffer_length), min(CONSTANTS.REPLAY_BUFFER_MOVES_CHOSEN, buffer_length))
         chosen_inputs = self.move_buffer["inputs"][chosen_indexes]
         chosen_labels = self.move_buffer["labels"][chosen_indexes]
-        # self.move_buffer["inputs"] = np.delete(self.move_buffer["inputs"], chosen_indexes, axis=0)
-        # self.move_buffer["labels"] = np.delete(self.move_buffer["labels"], chosen_indexes, axis=0)
-        return chosen_inputs, chosen_labels
+
+        buffer_length = self.mcts_examples["inputs"].shape[0]
+        chosen_indexes = random.sample(range(0, buffer_length), min(CONSTANTS.MCTS_MOVES_CHOSEN, buffer_length))
+        chosen_inputs_2 = self.mcts_examples["inputs"][chosen_indexes]
+        chosen_labels_2 = self.mcts_examples["labels"][chosen_indexes]
+
+        return np.concatenate((chosen_inputs, chosen_inputs_2)), np.concatenate((chosen_labels, chosen_labels_2))
     
     def add_training_examples(self, inputs, labels):
         self.move_buffer["inputs"] = np.concatenate((self.move_buffer["inputs"], inputs)) if self.move_buffer["inputs"].size > 0 else inputs

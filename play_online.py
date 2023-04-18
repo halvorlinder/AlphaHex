@@ -10,7 +10,7 @@ SIZE = 7
 
 game = Hex(SIZE)
 # actor = RandomAgent(Hex(SIZE), "RandomMan")
-actor = get_neural_agents(game, CONSTANTS.NEURAL_AGENT_TIMESTAMP)[0]
+actor = get_neural_agents(game, CONSTANTS.NEURAL_AGENT_TIMESTAMP)[-1]
 
 from ActorClient import ActorClient
 

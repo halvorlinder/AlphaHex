@@ -115,6 +115,8 @@ class HexState(Gamestate):
                 return self.get_int_list_representation()
             case StateRepresentation.LAYERED:
                 return self.get_layered_representation()
+            case StateRepresentation.DEFAULT:
+                return self.get_board_list()
             case _ :
                 raise('No representation format provided')
 
@@ -126,6 +128,8 @@ class HexState(Gamestate):
     def get_layered_representation(self) -> list[list[list[int]]]:
         return np.array([ list(map(lambda row: list(map(lambda p: 1 if p==piece else 0, row)), self.board)) for piece in [Piece.Open, Player.P1, Player.P2]])
         
+    def get_board_list(self) -> list[int]:
+        return list(map(lambda piece: 0 if piece==Piece.Open else 1 if piece==Player.P1 else 2, np.array(self.board).flatten()))
 
 
     def from_list(l: list[list[int]]) -> HexState:

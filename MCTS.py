@@ -1,12 +1,16 @@
 from functools import partial
 import itertools
+import json
+import os
 import numpy as np
 import random
 from game import Game, Gamestate, Move
 from connect2 import Connect2, Connect2Gamestate
 from hex import Hex
+from utils import epsilon_greedy_choise
 from torch import float32, float16, float64
 import time
+import multiprocessing as mp
 
 from representations import StateRepresentation
 import CONSTANTS
@@ -224,11 +228,23 @@ class MCTS():
             action_probs[action] = child.visits
         return action_probs
 
+    def run_simulations_from_config(self):
+        return self.run_simulations(CONSTANTS.ROLLOUTS)
 
+def get_mcts_examples(index : int):
+    game = Hex(7)
+    gs = game.get_initial_position()
+    for _ in range(2):
+        mcts = MCTS(game, root=Node(gs), representation=StateRepresentation.DEFAULT)
+        while mcts.initial_gamestate.reward() == None:
+            example = mcts.run_simulations(CONSTANTS.ROLLOUTS)
+            gamestate = mcts.initial_gamestate
+            selected_move = epsilon_greedy_choise(example, gamestate.get_legal_moves(), epsilon=CONSTANTS.GAME_MOVE_EPSILON)            
+            mcts = MCTS(game, root = mcts.get_next_root(selected_move), representation=StateRepresentation.DEFAULT)
+            with open(f'MCTS_data/data_{index}.txt', "a") as file:
+                file.write(f"{','.join(map(str,gamestate.get_representation(StateRepresentation.DEFAULT)))};{','.join(map(str,example))}\n")
 
 if __name__ == "__main__":
-    game = TicTacToeGame()
-    gs = game.from_int_list_representation([0,2,1,1,2,2,0,1,1])
-    mcts = MCTS(game, root=Node(gs))
-    for _ in range(1):
-        print(mcts.run_simulations(1000))
+
+    os.makedirs(f'MCTS_data', exist_ok=True)
+    mp.Pool(CONSTANTS.CORES).map(get_mcts_examples, range(CONSTANTS.CORES))
