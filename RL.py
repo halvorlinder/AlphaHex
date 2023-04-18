@@ -223,15 +223,17 @@ def train_from_conf() -> None:
         case CONSTANTS.NetworkArchitecture.RESNET:
             net = ConvResNet(
                 board_dimension_depth=game.conv_net_layers, 
-                channels=256, 
-                num_res_blocks=5, 
+                channels=CONSTANTS.CHANNELS_RES_BLOCK, 
+                num_res_blocks=CONSTANTS.NUMBER_RES_BLOCKS, 
                 board_state_length=game.state_representation_length, 
                 move_cardinality=game.move_cardinality, 
             )
 
+    pytorch_nn = PytorchNN(model=net)
+    # pytorch_nn.load(model=net, filename="agents/hex7/2023-04-15_18:40/2")
     rl = RL(
         game,
-        PytorchNN(model=net),
+        pytorch_nn,
         epsilon=CONSTANTS.GAME_MOVE_EPSILON
     )
     t = datetime.now()
