@@ -167,6 +167,14 @@ class NeuralAgent(Agent):
             case CONSTANTS.SelectionPolicy.MAX:
                 move = epsilon_greedy_choise(filter_and_normalize(
                     prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
+            case CONSTANTS.SelectionPolicy.SMART_SAMPLE:
+                s = np.argsort(-probs)
+                mask = np.zeros((len(probs),), dtype=int)
+                mask[s[0]] = 1
+                mask[s[1]] = 1
+                probs = probs*mask
+                move = np.random.choice(list(range(len(probs))), p=probs/sum(probs))
+
         return move
 
 def get_agent_folder() -> str:

@@ -8,6 +8,7 @@ class NetworkArchitecture(Enum):
 class SelectionPolicy(Enum):
     SAMPLE = auto()
     MAX = auto()
+    SMART_SAMPLE = auto()
 
 class TrainingGame(Enum):
     HEX = auto()
@@ -47,7 +48,7 @@ OPTIMIZER = Optimizer.ADAM
 HIDDEN_NODE_ACTIVATION = HiddenNodeActivation.RELU
 
 # FF
-LAYERS = [100, 100]
+LAYERS = [512,512,512]
 DROPOUT_RATE = 0.2
 
 # CONSTANTS IN MCTS
@@ -64,7 +65,7 @@ M_THREAD = True
 CORES = 10
 
 # Agent behaviour
-AGENT_SELECTION_POLICY = SelectionPolicy.MAX
+AGENT_SELECTION_POLICY = SelectionPolicy.SMART_SAMPLE
 
 # Agent training 
 GAMES_PER_SAVE = 100
@@ -81,7 +82,7 @@ MCTS_MOVES_CHOSEN = 40
 HEX_SIZE = 7
 
 # TOURNEY 
-NEURAL_AGENT_TIMESTAMP = "2023-04-14_10:53"
+NEURAL_AGENT_TIMESTAMP = "2023-04-16_17:50"
 TOURNEY_NUM_GAMES = 50
 RANDOM_IN_TOURNEY = True
 
