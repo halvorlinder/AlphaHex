@@ -2,3 +2,4 @@ __pycache__
 agent*
 data
 wandb/
+API_token.py
