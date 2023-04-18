@@ -7,6 +7,7 @@ import math
 import torch.utils.data as data_utils
 from functools import reduce
 import wandb
+from hex import Hex
 
 from neural_net import NeuralNet
 from representations import StateRepresentation
@@ -228,11 +229,56 @@ class Trainer():
         return total_loss_over_epochs / self.num_epochs
 
 
+def load_MCTS_data(game: Hex, net: NeuralNet) -> None:
+    states = []
+    probs = []
+    for i in range(8):
+        with open(f'MCTS_data/data_{i}.txt', 'r') as f:
+            for line in f:
+                state, prob = line.split(';')
+                state = game.from_int_list_representation(list(map(int, state.split(',')))).get_representation(net.state_representation)
+                prob = list(map(float, prob.split(',')))
+                states.append(state)
+                probs.append(prob)
+    
+    mcts_examples = {}
+    mcts_examples['inputs'] = np.array(states)
+    mcts_examples['labels'] = np.array(probs)
+    return mcts_examples
+
+def train_on_MC_data():
+    game = Hex(7)
+    net = ConvResNet(
+                board_dimension_depth=game.conv_net_layers, 
+                channels=CONSTANTS.CHANNELS_RES_BLOCK, 
+                num_res_blocks=CONSTANTS.NUMBER_RES_BLOCKS, 
+                board_state_length=game.state_representation_length, 
+                move_cardinality=game.move_cardinality, 
+            )
+    trainer = Trainer(model=net, num_epochs=CONSTANTS.NUM_EPOCHS, learning_rate=CONSTANTS.LEARNING_RATE, batch_size=CONSTANTS.BATCH_SIZE)
+    mcts_examples = load_MCTS_data(game=game, net=net)
+    x = mcts_examples["inputs"]
+    y = mcts_examples["labels"]
+    np.random.shuffle(x)
+    np.random.shuffle(y)
+    length = x.shape[0]
+    train_x, test_x = x[:int(length*0.9),:], x[int(length*0.9):,:]
+    train_y, test_y = y[:int(length*0.9),:], y[int(length*0.9):,:]
+    train_x = torch.tensor(train_x, dtype=torch.float32)
+    train_y = torch.tensor(train_y, dtype=torch.float32)
+    train_examples = data_utils.TensorDataset(train_x, train_y)
+    trainer.train(train_examples)
+    return net
 
 if __name__ == "__main__":
-    model1 = ConvResNet(3, 32, 10, 16, 16)
-    model2 = FFNet(16, 16)
-    from torchsummary import summary
-    summary(model1, (3, 4, 4))
-    summary(model2, (16,))
+    # model1 = ConvResNet(3, 32, 10, 16, 16)
+    # model2 = FFNet(16, 16)
+    # from torchsummary import summary
+    # summary(model1, (3, 4, 4))
+    # summary(model2, (16,))
+
+    # net = train_on_MC_data()
+    pass
+
+
     
