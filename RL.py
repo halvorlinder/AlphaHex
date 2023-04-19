@@ -75,6 +75,8 @@ class RL:
         chosen_inputs_2 = self.mcts_examples["inputs"][chosen_indexes]
         chosen_labels_2 = self.mcts_examples["labels"][chosen_indexes]
 
+        if CONSTANTS.MCTS_MOVES_CHOSEN == 0:
+            return [chosen_inputs, chosen_labels]
         return np.concatenate((chosen_inputs, chosen_inputs_2)), np.concatenate((chosen_labels, chosen_labels_2))
     
     def add_training_examples(self, inputs, labels):
@@ -167,6 +169,14 @@ class NeuralAgent(Agent):
             case CONSTANTS.SelectionPolicy.MAX:
                 move = epsilon_greedy_choise(filter_and_normalize(
                     prediction, gamestate.get_legal_moves()), gamestate.get_legal_moves(), epsilon=0)
+            case CONSTANTS.SelectionPolicy.SMART_SAMPLE:
+                s = np.argsort(-probs)
+                mask = np.zeros((len(probs),), dtype=int)
+                mask[s[0]] = 1
+                mask[s[1]] = 1
+                probs = probs*mask
+                move = np.random.choice(list(range(len(probs))), p=probs/sum(probs))
+
         return move
 
 def get_agent_folder() -> str:

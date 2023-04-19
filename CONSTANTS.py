@@ -8,6 +8,7 @@ class NetworkArchitecture(Enum):
 class SelectionPolicy(Enum):
     SAMPLE = auto()
     MAX = auto()
+    SMART_SAMPLE = auto()
 
 class TrainingGame(Enum):
     HEX = auto()
@@ -68,7 +69,7 @@ M_THREAD = True
 CORES = 10
 
 # Agent behaviour
-AGENT_SELECTION_POLICY = SelectionPolicy.MAX
+AGENT_SELECTION_POLICY = SelectionPolicy.SMART_SAMPLE
 
 # Agent training 
 GAMES_PER_SAVE = 50
