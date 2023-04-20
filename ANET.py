@@ -138,7 +138,7 @@ class FFNet(nn.Module):
                 nn.BatchNorm1d(out), 
                 nn.ReLU(), 
                 nn.Dropout(CONSTANTS.DROPOUT_RATE)
-                ) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS[:-1], CONSTANTS.LAYERS[1:])])
+                ) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS[:-1], CONSTANTS.LAYERS[:])])
             self.final_layer = nn.Sequential(
                 nn.Linear(CONSTANTS.LAYERS[-1], move_cardinality)
             )
