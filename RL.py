@@ -16,6 +16,7 @@ import multiprocessing as mp
 import wandb
 import random
 import torch.nn.functional as F
+import torch.nn as nn
 
 import CONSTANTS
 
@@ -200,13 +201,13 @@ def train_from_conf() -> None:
 
     match CONSTANTS.HIDDEN_NODE_ACTIVATION:
         case CONSTANTS.HiddenNodeActivation.LINEAR:
-            hidden_node_activation = F.linear
+            hidden_node_activation = None
         case CONSTANTS.HiddenNodeActivation.TANH:
-            hidden_node_activation = F.tanh
+            hidden_node_activation = nn.Tanh
         case CONSTANTS.HiddenNodeActivation.SIGMOID:
-            hidden_node_activation = F.sigmoid
+            hidden_node_activation = nn.Sigmoid
         case CONSTANTS.HiddenNodeActivation.RELU:
-            hidden_node_activation = F.relu
+            hidden_node_activation = nn.ReLU
 
     match CONSTANTS.NETWORK_ARCHITECTURE:
         case CONSTANTS.NetworkArchitecture.FF:
