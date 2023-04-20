@@ -128,17 +128,24 @@ class ResBlock(nn.Module):
 
 class FFNet(nn.Module):
 
-    def __init__(self, board_state_length: int = None, move_cardinality: int = None, filename : str = None, hidden_node_activation = F.relu, device=CONSTANTS.DEVICE) -> None:
+    def __init__(self, board_state_length: int = None, move_cardinality: int = None, filename : str = None, hidden_node_activation = CONSTANTS.HIDDEN_NODE_ACTIVATION, device=CONSTANTS.DEVICE) -> None:
         super().__init__()
         self.state_representation = StateRepresentation.FLAT
         self.hidden_node_activation = hidden_node_activation
         if not filename:
-            self.layers = nn.ModuleList([nn.Sequential(
-                nn.Linear(inp, out), 
-                nn.BatchNorm1d(out), 
-                nn.ReLU(), 
-                nn.Dropout(CONSTANTS.DROPOUT_RATE)
-                ) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS[:-1], CONSTANTS.LAYERS[:])])
+            if hidden_node_activation:
+                self.layers = nn.ModuleList([nn.Sequential(
+                    nn.Linear(inp, out), 
+                    nn.BatchNorm1d(out), 
+                    hidden_node_activation(), 
+                    nn.Dropout(CONSTANTS.DROPOUT_RATE)
+                    ) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS[:-1], CONSTANTS.LAYERS[:])])
+            else:
+                self.layers = nn.ModuleList([nn.Sequential(
+                    nn.Linear(inp, out), 
+                    nn.BatchNorm1d(out), 
+                    nn.Dropout(CONSTANTS.DROPOUT_RATE)
+                    ) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS[:-1], CONSTANTS.LAYERS[:])])
             self.final_layer = nn.Sequential(
                 nn.Linear(CONSTANTS.LAYERS[-1], move_cardinality)
             )
@@ -148,7 +155,7 @@ class FFNet(nn.Module):
         self.to(device=CONSTANTS.DEVICE)
 
     def forward(self, x):
-        x = reduce(lambda x, f: self.hidden_node_activation(f(x)), self.layers, x )
+        x = reduce(lambda x, f: f(x), self.layers, x )
         x = self.final_layer(x)
         return x
     
@@ -272,13 +279,12 @@ def train_on_MC_data():
 
 if __name__ == "__main__":
     # model1 = ConvResNet(3, 32, 10, 16, 16)
-    # model2 = FFNet(16, 16)
-    # from torchsummary import summary
+    model2 = FFNet(16, 16)
+    from torchsummary import summary
     # summary(model1, (3, 4, 4))
-    # summary(model2, (16,))
+    summary(model2, (16,))
 
     # net = train_on_MC_data()
-    pass
 
 
     
