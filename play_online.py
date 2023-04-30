@@ -56,5 +56,5 @@ class MyClient(ActorClient):
             return int(row), int(col)
 
 if __name__ == '__main__':
-    client = MyClient(auth=API_TOKEN, qualify=True)
+    client = MyClient(auth=API_TOKEN, qualify=False)
     client.run()
