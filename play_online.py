@@ -18,6 +18,9 @@ def get_MCTS_agent():
                 move_cardinality=game.move_cardinality, 
             )
     pynet = PytorchNN()
+
+    # TODO: change the agent to the one you want to use
+
     pynet.load(net, f'agents/hex7/MCTS/49')
     actor = NeuralAgent(pynet, f'50')
     return actor

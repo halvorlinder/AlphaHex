@@ -8,7 +8,7 @@ from RL import get_neural_agents
 from agent import Agent
 from game import Game
 from game_player import GameInstance
-from gen_agents import MCTSAgent
+from gen_agents import MCTSAgent, RandomAgent
 from tic_tac_toe import TicTacToeGame
 
 
@@ -58,7 +58,7 @@ class TournamentPlayer:
         plt.bar(agents, scores)
         plt.ylim(0,self.num_matches) 
         plt.draw()
-        plt.pause(0.1)
+        plt.pause(0.01)
         plt.clf()
 
     def plot_wins(self) -> None:

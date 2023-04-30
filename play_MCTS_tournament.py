@@ -20,10 +20,17 @@ if __name__ == "__main__":
     pynet.load(net, 'agents/hex7/MCTS/49')
     agents.append(NeuralAgent(pynet, f'MCTS'))
 
-    pynet.load(net, 'agents/hex7/2023-04-18_13:48/0')
-    pynet.load(net, 'agents/hex7/2023-04-18_13:48/1')
-    pynet.load(net, 'agents/hex7/2023-04-18_13:48/2')
-    agents.append(NeuralAgent(pynet, f'RL'))
+    # pynet.load(net, 'agents/hex7/2023-04-18_13:48/0')
+    # agents.append(NeuralAgent(pynet, f'RL0'))
+
+    # pynet.load(net, 'agents/hex7/2023-04-18_13:48/1')
+    # agents.append(NeuralAgent(pynet, f'RL1'))
+
+    # pynet.load(net, 'agents/hex7/2023-04-18_13:48/2')
+    # agents.append(NeuralAgent(pynet, f'RL2'))
+
+    pynet.load(net, 'agents/hex7/2023-04-18_13:48/3')
+    agents.append(NeuralAgent(pynet, f'RL3'))
 
     tourney = TournamentPlayer(game, agents, CONSTANTS.TOURNEY_NUM_GAMES, True, CONSTANTS.RANDOM_IN_TOURNEY)
     scores, wins = tourney.play_tournament()

@@ -137,7 +137,7 @@ class FFNet(nn.Module):
                 self.layers = nn.ModuleList([nn.Sequential(
                     nn.Linear(inp, out), 
                     nn.BatchNorm1d(out), 
-                    hidden_node_activation(), 
+                    nn.ReLU(), 
                     nn.Dropout(CONSTANTS.DROPOUT_RATE)
                     ) for (inp, out) in zip([board_state_length]+CONSTANTS.LAYERS[:-1], CONSTANTS.LAYERS[:])])
             else:
@@ -228,11 +228,12 @@ class Trainer():
         training_loader = torch.utils.data.DataLoader(tensor_dataset, batch_size=self.batch_size, shuffle=True, num_workers=0)
         total_loss_over_epochs = 0
         for epoch in range(self.num_epochs):
-            # print(f"Training epoch {epoch+1}")
+            print(f"Training epoch {epoch+1}")
             self.model.train(True)
             avg_loss = self.train_one_epoch(optimizer=optimizer, training_loader=training_loader, epoch=epoch)
             total_loss_over_epochs += avg_loss
             # print("Loss: ", avg_loss)
+            torch.save(self.model, f"agents/hex7/MCTS_FF/{epoch}")
         return total_loss_over_epochs / self.num_epochs
 
 
@@ -255,10 +256,7 @@ def load_MCTS_data(game: Hex, net: NeuralNet) -> None:
 
 def train_on_MC_data():
     game = Hex(7)
-    net = ConvResNet(
-                board_dimension_depth=game.conv_net_layers, 
-                channels=CONSTANTS.CHANNELS_RES_BLOCK, 
-                num_res_blocks=CONSTANTS.NUMBER_RES_BLOCKS, 
+    net = FFNet( 
                 board_state_length=game.state_representation_length, 
                 move_cardinality=game.move_cardinality, 
             )
@@ -282,9 +280,8 @@ if __name__ == "__main__":
     model2 = FFNet(16, 16)
     from torchsummary import summary
     # summary(model1, (3, 4, 4))
-    summary(model2, (16,))
 
-    # net = train_on_MC_data()
+    net = train_on_MC_data()
 
 
     
